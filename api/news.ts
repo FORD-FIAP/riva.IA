@@ -38,7 +38,10 @@ export default async function handler(req: any, res: any) {
   }
 
   const params = new URLSearchParams({
-    title: 'carro',
+    // Tópico oficial da APITube pra indústria automotiva — muito mais preciso
+    // que buscar a palavra "carro" solta (que também trazia notícias de
+    // crime/acidente que só citavam a palavra de passagem).
+    'topic.id': 'industry.automotive_news',
     'language.code': 'pt',
     'source.country.code': 'br',
     per_page: '8',
