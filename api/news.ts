@@ -9,8 +9,11 @@
 const APITUBE_URL = 'https://api.apitube.io/v1/news/everything';
 
 interface ApitubeArticle {
+  id?: number | string;
   title?: string;
+  href?: string;
   source?: { domain?: string; name?: string };
+  author?: { name?: string };
 }
 
 export default async function handler(req: any, res: any) {
@@ -35,7 +38,7 @@ export default async function handler(req: any, res: any) {
   }
 
   const params = new URLSearchParams({
-    title: 'carro OR automóvel OR veículo OR montadora',
+    title: 'carro',
     'language.code': 'pt',
     'source.country.code': 'br',
     per_page: '8',
@@ -57,11 +60,21 @@ export default async function handler(req: any, res: any) {
 
     const noticias = articles
       .filter((a) => a.title)
-      .map((a, i) => ({
-        id: `apitube-${i}`,
-        titulo: a.title as string,
-        fonte: a.source?.name ?? a.source?.domain ?? 'Fonte desconhecida',
-      }));
+      .map((a, i) => {
+        let fonte = a.source?.name ?? a.source?.domain ?? a.author?.name;
+        if (!fonte && a.href) {
+          try {
+            fonte = new URL(a.href).hostname.replace(/^www\./, '');
+          } catch {
+            // ignora URL inválida
+          }
+        }
+        return {
+          id: `apitube-${a.id ?? i}`,
+          titulo: a.title as string,
+          fonte: fonte ?? 'Fonte desconhecida',
+        };
+      });
 
     res.status(200).json({ noticias });
   } catch (err) {
