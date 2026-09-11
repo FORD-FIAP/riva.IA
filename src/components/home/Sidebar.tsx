@@ -9,11 +9,13 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../theme/colors';
 import { NATIVE_DRIVER } from '../../utils/animation';
+import { DESKTOP_BREAKPOINT, SIDEBAR_DOCKED_WIDTH } from '../../utils/layout';
 import { useNavigation, AppScreen } from '../../context/NavigationContext';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
@@ -28,7 +30,6 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const DRAWER_OFFSET = 400;
 const MAX_RECENTES_VISIVEIS = 7;
 const MAX_FAVORITOS_VISIVEIS = 4;
 
@@ -57,6 +58,15 @@ function selecionarRecentesVisiveis(conversas: ConversaArquivada[]) {
 
 export function Sidebar({ visible, onClose }: SidebarProps) {
   const insets = useSafeAreaInsets();
+  // A tela do drawer é 82% da largura da tela — o deslocamento "fechado" precisa
+  // ser pelo menos essa largura pra sumir de vez, senão sobra uma tira visível em
+  // telas largas (por isso um valor fixo em pixels não funciona em toda largura).
+  const { width: screenWidth } = useWindowDimensions();
+  const drawerOffset = screenWidth;
+  // Tela larga: sidebar fixa à esquerda, sempre visível, sem animação de
+  // abrir/fechar — igual um app desktop de verdade (Claude, etc). Mesma
+  // árvore/JSX sempre; só o estilo muda, pra não repetir o bug de antes.
+  const isDesktop = screenWidth >= DESKTOP_BREAKPOINT;
   const { activeScreen, navigate, openVehicle } = useNavigation();
   const { user, isAuthenticated, requestLogin } = useAuth();
   const { resetChat, loadConversation } = useChat();
@@ -70,7 +80,7 @@ export function Sidebar({ visible, onClose }: SidebarProps) {
   const [view, setView] = useState<'menu' | 'chats'>('menu');
   const [filtro, setFiltro] = useState<'todos' | 'favoritos'>('todos');
   const [filtroAberto, setFiltroAberto] = useState(false);
-  const slideAnim = useRef(new Animated.Value(DRAWER_OFFSET)).current;
+  const slideAnim = useRef(new Animated.Value(drawerOffset)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
   const chatsFavoritados = useMemo(
@@ -89,15 +99,16 @@ export function Sidebar({ visible, onClose }: SidebarProps) {
     : conversasRecentes;
 
   useEffect(() => {
+    const abrir = isDesktop || visible;
     Animated.parallel([
       Animated.timing(slideAnim, {
-        toValue: visible ? 0 : DRAWER_OFFSET,
-        duration: 280,
+        toValue: abrir ? 0 : drawerOffset,
+        duration: isDesktop ? 0 : 280,
         useNativeDriver: NATIVE_DRIVER,
       }),
       Animated.timing(backdropAnim, {
-        toValue: visible ? 1 : 0,
-        duration: 280,
+        toValue: isDesktop ? 0 : visible ? 1 : 0,
+        duration: isDesktop ? 0 : 280,
         useNativeDriver: NATIVE_DRIVER,
       }),
     ]).start();
@@ -106,7 +117,7 @@ export function Sidebar({ visible, onClose }: SidebarProps) {
       setFiltro('todos');
       setFiltroAberto(false);
     }
-  }, [visible]);
+  }, [visible, drawerOffset, isDesktop]);
 
   function handleNavigate(screen: Parameters<typeof navigate>[0]) {
     navigate(screen);
@@ -154,18 +165,20 @@ export function Sidebar({ visible, onClose }: SidebarProps) {
 
   return (
     <View
-      style={StyleSheet.absoluteFill}
-      pointerEvents={visible ? 'auto' : 'none'}
+      style={isDesktop ? styles.dockedWrap : StyleSheet.absoluteFill}
+      pointerEvents={isDesktop || visible ? 'auto' : 'none'}
     >
-      {/* Backdrop semitransparente */}
-      <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
-      </Animated.View>
+      {/* Backdrop semitransparente — só existe no modo drawer (mobile) */}
+      {!isDesktop && (
+        <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
+        </Animated.View>
+      )}
 
-      {/* Drawer deslizante da direita */}
+      {/* Desktop: fixa à esquerda, sem animação. Mobile: drawer deslizante da direita */}
       <Animated.View
         style={[
-          styles.drawer,
+          isDesktop ? styles.drawerDocked : styles.drawer,
           { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
           { transform: [{ translateX: slideAnim }] },
         ]}
@@ -428,6 +441,24 @@ const styles = StyleSheet.create({
     width: '82%',
     backgroundColor: Colors.sidebarBg,
     paddingHorizontal: 20,
+  },
+  dockedWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: SIDEBAR_DOCKED_WIDTH,
+  },
+  drawerDocked: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: SIDEBAR_DOCKED_WIDTH,
+    backgroundColor: Colors.sidebarBg,
+    paddingHorizontal: 16,
+    borderRightWidth: 1,
+    borderRightColor: Colors.border,
   },
   drawerHeader: {
     flexDirection: 'row',

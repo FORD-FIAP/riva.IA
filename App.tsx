@@ -1,6 +1,6 @@
 /** Ponto de entrada do app RIVA — carrega fonte Sora antes de renderizar */
 import React, { useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
@@ -25,13 +25,16 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 import { Sidebar } from './src/components/home/Sidebar';
 import { IntroAnimation } from './src/components/splash/IntroAnimation';
 import { Colors } from './src/theme/colors';
+import { DESKTOP_BREAKPOINT, SIDEBAR_DOCKED_WIDTH } from './src/utils/layout';
 
 function AppScreens() {
   const { activeScreen, sidebarOpen, closeSidebar } = useNavigation();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= DESKTOP_BREAKPOINT;
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bg }}>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingLeft: isDesktop ? SIDEBAR_DOCKED_WIDTH : 0 }}>
         {activeScreen === 'Veículos' ? (
           <VeiculosScreen />
         ) : activeScreen === 'Comparar' ? (
