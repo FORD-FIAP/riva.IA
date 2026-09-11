@@ -48,27 +48,15 @@ Escaneie o QR Code com o **Expo Go** (Android) ou a câmera (iOS).
 
 **Alternativa:** a extensão do VS Code `Mobile Preview: Show` também funciona para pré-visualizar sem celular.
 
-### Variáveis de ambiente
-
-Copie `.env.example` para `.env` e preencha:
-
-```
-EXPO_PUBLIC_API_BASE_URL=https://sua-url-do-backend.vercel.app
-```
-
-Sem isso, o chat continua funcionando normalmente, só que com uma resposta de placeholder em vez da IA real.
-
 ### Backend (chat com IA)
 
-O proxy para o Gemini Flash vive em [`api/chat.ts`](api/chat.ts), como função serverless da Vercel — mantém a chave de API fora do app. Para publicar o seu próprio:
+| Variável | Onde | Descrição |
+|---|---|---|
+| `GEMINI_API_KEY` | Vercel (projeto do backend) | Chave gratuita gerada em [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| `APITUBE_API_KEY` | Vercel (projeto do backend) | Chave da [APITube](https://apitube.io) pra buscar notícias automotivas |
+| `EXPO_PUBLIC_API_BASE_URL` | App (`.env` local ou EAS) | URL do backend deployado (ex: `https://riva-ia.vercel.app`) |
 
-```bash
-npx vercel login
-npx vercel
-npx vercel --prod
-```
-
-E configure `GEMINI_API_KEY` (grátis em [aistudio.google.com/apikey](https://aistudio.google.com/apikey)) nas variáveis de ambiente do projeto na Vercel.
+Sem `EXPO_PUBLIC_API_BASE_URL` configurada, o chat cai automaticamente numa mensagem de placeholder e as notícias caem no mock local — o app nunca quebra por falta de backend.
 
 ### Build final (APK)
 
