@@ -396,10 +396,10 @@ function VehiclePickerModal({
         brandsToQuery.map(async (brand) => {
           const models = await getFipeModels(brand.valor);
           if (!models) return [];
-          const filteredModels = hasFilters
-            ? models
-            : models.filter((m) => m.modelo.toLowerCase().includes(q));
-          return filteredModels.slice(0, 30).map((m) => buildVehicleFromFipe(brand, m));
+          // A marca já bateu com a busca (matchingBrands) — não faz sentido exigir
+          // que o nome do MODELO também contenha o texto (ex: buscar "Honda" não
+          // deveria zerar resultado só por nenhum modelo se chamar "Honda").
+          return models.slice(0, 30).map((m) => buildVehicleFromFipe(brand, m));
         }),
       );
 
