@@ -11,6 +11,7 @@ import { useChat } from '../context/ChatContext';
 import { ChatInput, ChatAttachment } from '../components/home/ChatInput';
 import { ChatThread } from '../components/home/ChatThread';
 import { Colors } from '../theme/colors';
+import { NATIVE_DRIVER } from '../utils/animation';
 
 function getSaudacao(): string {
   const hour = new Date().getHours();
@@ -40,7 +41,7 @@ export function HomeScreen() {
     Animated.timing(chatAnim, {
       toValue: hasConversation ? 1 : 0,
       duration: 450,
-      useNativeDriver: true,
+      useNativeDriver: NATIVE_DRIVER,
     }).start();
   }, [hasConversation, chatAnim]);
 

@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons, AntDesign } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
+import { NATIVE_DRIVER } from '../utils/animation';
 import { useAuth, AuthPromptContext } from '../context/AuthContext';
 import { useFipePrice } from '../hooks/useFipePrice';
 import { Vehicle } from '../types/vehicle';
@@ -74,13 +75,13 @@ export function LoginScreen() {
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 280,
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }).start();
     } else if (shouldRender) {
       Animated.timing(slideAnim, {
         toValue: screenWidth,
         duration: 240,
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }).start(({ finished }) => {
         if (finished) setShouldRender(false);
       });

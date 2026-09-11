@@ -1,6 +1,7 @@
 /** Orb da RIVA — gradiente radial com glow e animação de pulse */
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet } from 'react-native';
+import { NATIVE_DRIVER } from '../../utils/animation';
 
 interface RivaOrbProps {
   size?: number;
@@ -16,8 +17,8 @@ export function RivaOrb({ size = 56 }: RivaOrbProps) {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.1, duration: 1800, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1, duration: 1800, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1.1, duration: 1800, useNativeDriver: NATIVE_DRIVER }),
+        Animated.timing(pulse, { toValue: 1, duration: 1800, useNativeDriver: NATIVE_DRIVER }),
       ])
     ).start();
   }, [pulse]);

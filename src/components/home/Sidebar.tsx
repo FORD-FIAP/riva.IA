@@ -13,6 +13,7 @@ import {
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../theme/colors';
+import { NATIVE_DRIVER } from '../../utils/animation';
 import { useNavigation, AppScreen } from '../../context/NavigationContext';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
@@ -92,12 +93,12 @@ export function Sidebar({ visible, onClose }: SidebarProps) {
       Animated.timing(slideAnim, {
         toValue: visible ? 0 : DRAWER_OFFSET,
         duration: 280,
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }),
       Animated.timing(backdropAnim, {
         toValue: visible ? 1 : 0,
         duration: 280,
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }),
     ]).start();
     if (!visible) {
