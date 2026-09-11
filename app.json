@@ -32,7 +32,8 @@
       ]
     },
     "web": {
-      "favicon": "./assets/logo-riva.png"
+      "favicon": "./assets/logo-riva.png",
+      "lang": "pt-BR"
     },
     "plugins": [
       "expo-audio",

@@ -1,6 +1,6 @@
 /** Ponto de entrada do app RIVA — carrega fonte Sora antes de renderizar */
 import React, { useState } from 'react';
-import { View, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Text, Image, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
@@ -27,10 +27,35 @@ import { IntroAnimation } from './src/components/splash/IntroAnimation';
 import { Colors } from './src/theme/colors';
 import { DESKTOP_BREAKPOINT, SIDEBAR_DOCKED_WIDTH } from './src/utils/layout';
 
+/** Versão web em tela estreita (celular) ainda tem bugs de layout não resolvidos —
+ * em vez de mostrar a experiência quebrada, orienta a testar pelo app nativo/APK. */
+function MobileWebBlock() {
+  return (
+    <View style={{ flex: 1, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 16 }}>
+      <Image
+        source={require('./assets/logo-riva.png')}
+        style={{ width: 96, height: 96, borderRadius: 20, marginBottom: 8 }}
+        resizeMode="contain"
+      />
+      <Text style={{ color: Colors.textPrimary, fontSize: 20, fontWeight: '700', textAlign: 'center' }}>
+        Versão mobile web em ajuste
+      </Text>
+      <Text style={{ color: Colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
+        Por enquanto, use a RIVA pelo app (Expo Go/APK) ou acesse por um computador.
+        Já estamos corrigindo a versão web pra celular.
+      </Text>
+    </View>
+  );
+}
+
 function AppScreens() {
   const { activeScreen, sidebarOpen, closeSidebar } = useNavigation();
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
+
+  if (Platform.OS === 'web' && !isDesktop) {
+    return <MobileWebBlock />;
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bg }}>
