@@ -48,7 +48,8 @@ interface ChatContextValue {
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const preferences = user?.preferences;
   const { arquivar } = useConversasRecentesContext();
   const [state, setState] = useState<ChatState>({ messages: [], favorited: false });
   const [isTyping, setIsTyping] = useState(false);
@@ -75,7 +76,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     const minDelay = new Promise<void>((resolve) => setTimeout(resolve, TYPING_DELAY_MS));
 
-    Promise.all([sendChatMessage(trimmed, historySnapshot), minDelay]).then(([reply]) => {
+    Promise.all([sendChatMessage(trimmed, historySnapshot, preferences), minDelay]).then(([reply]) => {
       const rivaMsg: ChatMessage = {
         id: `riva-${Date.now()}`,
         role: 'riva',
@@ -84,7 +85,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       setState((prev) => ({ ...prev, messages: [...prev.messages, rivaMsg] }));
       setIsTyping(false);
     });
-  }, [state.messages]);
+  }, [state.messages, preferences]);
 
   /** Refaz a resposta da RIVA pra uma pergunta específica, descartando essa
    * resposta (e qualquer coisa depois dela) e pedindo uma nova. */
@@ -100,7 +101,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     const minDelay = new Promise<void>((resolve) => setTimeout(resolve, TYPING_DELAY_MS));
 
-    Promise.all([sendChatMessage(userMsg.text, truncated), minDelay]).then(([reply]) => {
+    Promise.all([sendChatMessage(userMsg.text, truncated, preferences), minDelay]).then(([reply]) => {
       const rivaMsg: ChatMessage = {
         id: `riva-${Date.now()}`,
         role: 'riva',
@@ -109,7 +110,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       setState((prev) => ({ ...prev, messages: [...prev.messages, rivaMsg] }));
       setIsTyping(false);
     });
-  }, [state.messages]);
+  }, [state.messages, preferences]);
 
   const resetChat = useCallback(() => {
     setIsTyping(false);

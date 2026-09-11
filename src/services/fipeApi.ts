@@ -10,6 +10,9 @@
 
 const BASE_URL = 'https://brasilapi.com.br/api/fipe';
 
+/** Categoria do veículo — a FIPE/BrasilAPI mantém marcas e modelos separados por tipo. */
+export type VehicleType = 'carros' | 'motos' | 'caminhoes';
+
 export interface FipeBrand {
   nome: string;
   valor: string;
@@ -43,14 +46,14 @@ async function safeFetchJson<T>(url: string): Promise<T | null> {
   }
 }
 
-/** Lista de marcas de carros reais da tabela FIPE. */
-export function getFipeBrands(): Promise<FipeBrand[] | null> {
-  return safeFetchJson<FipeBrand[]>(`${BASE_URL}/marcas/v1/carros`);
+/** Lista de marcas reais da tabela FIPE pra um tipo de veículo (carros por padrão). */
+export function getFipeBrands(tipo: VehicleType = 'carros'): Promise<FipeBrand[] | null> {
+  return safeFetchJson<FipeBrand[]>(`${BASE_URL}/marcas/v1/${tipo}`);
 }
 
 /** Lista de modelos (com variações/versões) reais de uma marca da FIPE. */
-export function getFipeModels(codigoMarca: string): Promise<FipeModel[] | null> {
-  return safeFetchJson<FipeModel[]>(`${BASE_URL}/veiculos/v1/carros/${codigoMarca}`);
+export function getFipeModels(codigoMarca: string, tipo: VehicleType = 'carros'): Promise<FipeModel[] | null> {
+  return safeFetchJson<FipeModel[]>(`${BASE_URL}/veiculos/v1/${tipo}/${codigoMarca}`);
 }
 
 /**

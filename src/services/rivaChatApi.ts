@@ -9,7 +9,11 @@ import { ChatMessage } from '../hooks/useConversasRecentes';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
 
-export async function sendChatMessage(message: string, history: ChatMessage[]): Promise<string | null> {
+export async function sendChatMessage(
+  message: string,
+  history: ChatMessage[],
+  preferences?: string,
+): Promise<string | null> {
   if (!API_BASE_URL) {
     console.warn('[rivaChatApi] EXPO_PUBLIC_API_BASE_URL não está definida — caindo no placeholder.');
     return null;
@@ -23,6 +27,7 @@ export async function sendChatMessage(message: string, history: ChatMessage[]): 
       body: JSON.stringify({
         message,
         history: history.slice(-10).map((m) => ({ role: m.role, text: m.text })),
+        preferences: preferences?.trim() || undefined,
       }),
     });
     const roundTripMs = Date.now() - startedAt;

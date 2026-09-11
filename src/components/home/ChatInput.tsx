@@ -1,10 +1,9 @@
 /** Composer principal da Home — "Chat Riva", com anexo de imagem e gravação de voz */
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useAudioRecorder, AudioModule, RecordingPresets } from 'expo-audio';
 import { Colors } from '../../theme/colors';
 
 export interface ChatAttachment {
@@ -22,8 +21,6 @@ const webNoOutline = { outlineStyle: 'none' } as unknown as { outlineWidth: numb
 export function ChatInput({ onSend }: ChatInputProps) {
   const [text, setText] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   function handleSend() {
     if (!text.trim() && !imageUri) return;
@@ -45,22 +42,8 @@ export function ChatInput({ onSend }: ChatInputProps) {
     }
   }
 
-  async function handleToggleRecording() {
-    if (isRecording) {
-      await audioRecorder.stop();
-      setIsRecording(false);
-      if (audioRecorder.uri) {
-        onSend('', { audioUri: audioRecorder.uri });
-      }
-      return;
-    }
-
-    const permission = await AudioModule.requestRecordingPermissionsAsync();
-    if (!permission.granted) return;
-
-    await audioRecorder.prepareToRecordAsync();
-    audioRecorder.record();
-    setIsRecording(true);
+  function handleMicPress() {
+    Alert.alert('Ainda em Produção.', 'A gravação de áudio está temporariamente desabilitada.');
   }
 
   return (
@@ -74,23 +57,16 @@ export function ChatInput({ onSend }: ChatInputProps) {
         </View>
       )}
 
-      {isRecording ? (
-        <View style={styles.recordingRow}>
-          <View style={styles.recordingDot} />
-          <Text style={styles.recordingLabel}>Gravando áudio...</Text>
-        </View>
-      ) : (
-        <TextInput
-          style={[styles.input, webNoOutline]}
-          placeholder="Chat Riva"
-          placeholderTextColor={Colors.textHint}
-          value={text}
-          onChangeText={setText}
-          onSubmitEditing={handleSend}
-          returnKeyType="send"
-          multiline={false}
-        />
-      )}
+      <TextInput
+        style={[styles.input, webNoOutline]}
+        placeholder="Chat Riva"
+        placeholderTextColor={Colors.textHint}
+        value={text}
+        onChangeText={setText}
+        onSubmitEditing={handleSend}
+        returnKeyType="send"
+        multiline={false}
+      />
 
       <View style={styles.divider} />
 
@@ -100,11 +76,8 @@ export function ChatInput({ onSend }: ChatInputProps) {
         </TouchableOpacity>
 
         <View style={styles.footerRight}>
-          <TouchableOpacity
-            style={[styles.addBtn, isRecording && styles.addBtnRecording]}
-            onPress={handleToggleRecording}
-          >
-            <Feather name="mic" size={16} color={isRecording ? Colors.textPrimary : Colors.textSecondary} />
+          <TouchableOpacity style={styles.addBtn} onPress={handleMicPress}>
+            <Feather name="mic" size={16} color={Colors.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.sendBtn} onPress={handleSend}>
@@ -154,23 +127,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  recordingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    minHeight: 20,
-  },
-  recordingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FF6B6B',
-  },
-  recordingLabel: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontFamily: 'Sora_400Regular',
-  },
   divider: {
     height: 1,
     backgroundColor: Colors.border,
@@ -193,10 +149,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  addBtnRecording: {
-    backgroundColor: '#FF6B6B',
-    borderColor: '#FF6B6B',
   },
   sendBtn: {
     width: 38,

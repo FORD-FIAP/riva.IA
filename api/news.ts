@@ -11,7 +11,9 @@ const APITUBE_URL = 'https://api.apitube.io/v1/news/everything';
 interface ApitubeArticle {
   id?: number | string;
   title?: string;
+  description?: string;
   href?: string;
+  published_at?: string;
   source?: { domain?: string; name?: string };
   author?: { name?: string };
 }
@@ -44,7 +46,7 @@ export default async function handler(req: any, res: any) {
     'topic.id': 'industry.automotive_news',
     'language.code': 'pt',
     'source.country.code': 'br',
-    per_page: '8',
+    per_page: '15',
     api_key: apiKey,
   });
 
@@ -76,6 +78,9 @@ export default async function handler(req: any, res: any) {
           id: `apitube-${a.id ?? i}`,
           titulo: a.title as string,
           fonte: fonte ?? 'Fonte desconhecida',
+          descricao: a.description,
+          url: a.href,
+          publicadoEm: a.published_at,
         };
       });
 

@@ -19,9 +19,7 @@ import { useChat } from '../../context/ChatContext';
 import { useConversasRecentesContext } from '../../context/ConversasRecentesContext';
 import { useFavoritesContext } from '../../context/FavoritesContext';
 import { ConversaArquivada } from '../../hooks/useConversasRecentes';
-import { noticias as noticiasMock, Noticia } from '../../mock/noticias';
 import { getCachedVehicle } from '../../services/fipeApi';
-import { fetchNoticias } from '../../services/newsApi';
 import { Vehicle } from '../../types/vehicle';
 
 interface SidebarProps {
@@ -37,6 +35,7 @@ const NAV_ITEMS: { label: AppScreen; icon: React.ComponentProps<typeof Feather>[
   { label: 'Início',   icon: 'home'        },
   { label: 'Veículos', icon: null, iconMci: 'car-side' },
   { label: 'Comparar', icon: 'bar-chart-2' },
+  { label: 'Notícias', icon: 'file-text' },
 ];
 
 /** Seleciona os itens exibidos direto na sidebar: no máx. 4 favoritados e 7 no total,
@@ -63,13 +62,6 @@ export function Sidebar({ visible, onClose }: SidebarProps) {
   const { conversas: conversasRecentes, remover, renomear } = useConversasRecentesContext();
   const [editandoTitulo, setEditandoTitulo] = useState<string | null>(null);
   const [rascunhoTitulo, setRascunhoTitulo] = useState('');
-  const [noticias, setNoticias] = useState<Noticia[]>(noticiasMock);
-
-  useEffect(() => {
-    fetchNoticias().then((result) => {
-      if (result && result.length > 0) setNoticias(result);
-    });
-  }, []);
   const { favorites } = useFavoritesContext();
   const favoriteVehicles = favorites
     .map((id) => getCachedVehicle(id))
@@ -342,19 +334,6 @@ export function Sidebar({ visible, onClose }: SidebarProps) {
               )}
 
               {/* Notícias — atualidades do mercado automotivo trazidas pela IA da RIVA */}
-              <Text style={[styles.sectionLabel, { marginTop: 20 }]}>NOTÍCIAS</Text>
-              {noticias.length === 0 ? (
-                <Text style={styles.emptyText}>Nenhuma novidade por enquanto</Text>
-              ) : (
-                noticias.map((n) => (
-                  <View key={n.id} style={styles.listItem}>
-                    <Feather name="file-text" size={13} color={Colors.textMuted} />
-                    <Text style={styles.listItemLabel} numberOfLines={1}>
-                      {n.titulo}
-                    </Text>
-                  </View>
-                ))
-              )}
             </ScrollView>
 
             {/* Rodapé — avatar/perfil + novo chat */}

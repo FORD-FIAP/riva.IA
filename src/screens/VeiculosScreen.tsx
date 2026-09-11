@@ -98,7 +98,7 @@ export function VeiculosScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Veículos</Text>
-          <Text style={styles.headerSubtitle}>Marca e modelo reais da FIPE</Text>
+          <Text style={styles.headerSubtitle}>Busque pelos seus sonhos, aqui!</Text>
         </View>
         <TouchableOpacity style={styles.menuButton} onPress={openSidebar}>
           <Feather name="menu" size={18} color={Colors.textPrimary} />
@@ -161,11 +161,11 @@ export function VeiculosScreen() {
           /* Empty state */
           <View style={styles.emptyState}>
             <View style={styles.emptyIconCircle}>
-              <MaterialCommunityIcons name="car-search-outline" size={30} color={Colors.textMuted} />
+              <MaterialCommunityIcons name="car-search-outline" size={32} color={Colors.textMuted} />
             </View>
             <Text style={styles.emptyStateTitle}>Comece sua busca</Text>
             <Text style={styles.emptyStateText}>
-              Use a lupa para pesquisar por nome ou{'\n'}abra o filtro para escolher a marca.
+              Pesquise por marca ou modelo, ou use o filtro pra explorar as opções.
             </Text>
           </View>
         )}
@@ -310,20 +310,21 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   emptyIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.surface2,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
   emptyStateTitle: {
     color: Colors.textPrimary,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     fontFamily: 'Sora_700Bold',
-    textAlign: 'center',
   },
   emptyStateText: {
     color: Colors.textSecondary,
