@@ -46,7 +46,7 @@ export default async function handler(req: any, res: any) {
     'topic.id': 'industry.automotive_news',
     'language.code': 'pt',
     'source.country.code': 'br',
-    per_page: '15',
+    per_page: '10',
     api_key: apiKey,
   });
 
@@ -56,7 +56,7 @@ export default async function handler(req: any, res: any) {
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '');
       console.error('APITube respondeu erro:', response.status, errorBody);
-      res.status(502).json({ error: 'Falha ao buscar notícias', status: response.status });
+      res.status(502).json({ error: 'Falha ao buscar notícias', status: response.status, detail: errorBody });
       return;
     }
 
