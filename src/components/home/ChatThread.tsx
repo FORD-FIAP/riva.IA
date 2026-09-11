@@ -10,6 +10,7 @@ import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Share }
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { Colors } from '../../theme/colors';
+import { NATIVE_DRIVER } from '../../utils/animation';
 import { RivaOrb } from './RivaOrb';
 import { ChatMessage, useChat } from '../../context/ChatContext';
 import { MarkdownText } from './MarkdownText';
@@ -126,8 +127,8 @@ function TypingBubble() {
       Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
-          Animated.timing(val, { toValue: 1, duration: 350, useNativeDriver: true }),
-          Animated.timing(val, { toValue: 0.3, duration: 350, useNativeDriver: true }),
+          Animated.timing(val, { toValue: 1, duration: 350, useNativeDriver: NATIVE_DRIVER }),
+          Animated.timing(val, { toValue: 0.3, duration: 350, useNativeDriver: NATIVE_DRIVER }),
         ]),
       ).start();
     loop(a, 0);

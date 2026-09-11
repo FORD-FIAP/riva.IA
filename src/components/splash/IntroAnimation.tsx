@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet, Easing } from 'react-native';
 import { Colors } from '../../theme/colors';
+import { NATIVE_DRIVER } from '../../utils/animation';
 
 interface IntroAnimationProps {
   onFinish: () => void;
@@ -32,21 +33,21 @@ export function IntroAnimation({ onFinish }: IntroAnimationProps) {
       toValue: 1,
       duration: ENTER_MS,
       easing: Easing.out(Easing.back(1.2)),
-      useNativeDriver: true,
+      useNativeDriver: NATIVE_DRIVER,
     }).start(() => {
       const timer = setTimeout(() => {
         Animated.parallel([
           Animated.timing(backgroundAnim, {
             toValue: 0,
             duration: EXIT_MS,
-            useNativeDriver: true,
+            useNativeDriver: NATIVE_DRIVER,
           }),
           ...letterAnims.map((anim, i) =>
             Animated.timing(anim, {
               toValue: { x: EXIT_OFFSETS[i].x, y: EXIT_OFFSETS[i].y },
               duration: EXIT_MS,
               easing: Easing.in(Easing.cubic),
-              useNativeDriver: true,
+              useNativeDriver: NATIVE_DRIVER,
             }),
           ),
           ...letterOpacity.map((anim) =>
@@ -54,7 +55,7 @@ export function IntroAnimation({ onFinish }: IntroAnimationProps) {
               toValue: 0,
               duration: EXIT_MS,
               delay: EXIT_MS * 0.3,
-              useNativeDriver: true,
+              useNativeDriver: NATIVE_DRIVER,
             }),
           ),
         ]).start(onFinish);

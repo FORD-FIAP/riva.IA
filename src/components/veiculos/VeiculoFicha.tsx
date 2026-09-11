@@ -12,6 +12,7 @@ import {
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Vehicle } from '../../types/vehicle';
 import { Colors } from '../../theme/colors';
+import { NATIVE_DRIVER } from '../../utils/animation';
 import { useFavoritesContext } from '../../context/FavoritesContext';
 import { useAuth } from '../../context/AuthContext';
 import { useRecentlyViewedContext } from '../../context/RecentlyViewedContext';
@@ -43,12 +44,12 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
       Animated.timing(slideAnim, {
         toValue: visible ? 0 : screenHeight,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }),
       Animated.timing(backdropAnim, {
         toValue: visible ? 1 : 0,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }),
     ]).start();
     if (visible && vehicle) trackView(vehicle.id);

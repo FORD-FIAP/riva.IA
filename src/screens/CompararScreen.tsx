@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
+import { NATIVE_DRIVER } from '../utils/animation';
 import { useNavigation } from '../context/NavigationContext';
 import { useFavoritesContext } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
@@ -328,13 +329,13 @@ function VehiclePickerModal({
     }
     if (visible) {
       Animated.parallel([
-        Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-        Animated.timing(backdropAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: NATIVE_DRIVER }),
+        Animated.timing(backdropAnim, { toValue: 1, duration: 300, useNativeDriver: NATIVE_DRIVER }),
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(slideAnim, { toValue: screenHeight, duration: 300, useNativeDriver: true }),
-        Animated.timing(backdropAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: screenHeight, duration: 300, useNativeDriver: NATIVE_DRIVER }),
+        Animated.timing(backdropAnim, { toValue: 0, duration: 300, useNativeDriver: NATIVE_DRIVER }),
       ]).start();
       setSearch('');
       setFilterOpen(false);

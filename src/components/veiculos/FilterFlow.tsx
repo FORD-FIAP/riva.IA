@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../theme/colors';
+import { NATIVE_DRIVER } from '../../utils/animation';
 import { getFipeBrands, FipeBrand } from '../../services/fipeApi';
 import {
   FilterSheetHeader,
@@ -68,12 +69,12 @@ export function FilterSheet({ visible, filters, onChange, onClose }: FilterSheet
       Animated.timing(slideAnim, {
         toValue: visible ? 0 : screenHeight,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }),
       Animated.timing(backdropAnim, {
         toValue: visible ? 1 : 0,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }),
     ]).start();
   }, [visible]);
