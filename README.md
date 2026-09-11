@@ -1,6 +1,6 @@
 <div align="center">
 
-# RIVA.IA — Sua Assistente Inteligente de Veículos
+# RIVA.IA
 
 ![Expo](https://img.shields.io/badge/Expo-57-000020?logo=expo&logoColor=white)
 ![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
@@ -12,21 +12,23 @@
 
 ---
 
-App de exploração e comparação de veículos, com chat via IA (Gemini Flash) e dados de marca/modelo/preço vindos da tabela FIPE em tempo real.
+RIVA é uma assistente de IA para exploração, comparação e descoberta de veículos.
+
+ O app combina um chat conversacional (Gemini Flash, via backend próprio) com catálogo real da tabela FIPE, comparativo lado a lado e um feed de notícias automotivas — pensado tanto para um possível comprador quanto para um consultor explorando o mercado.
 
 ---
 | Camada | Tecnologia |
 |---|---|
-| Framework | React Native 0.86 + Expo SDK 57 |
+| Framework | React Native 0.86 + Expo 57 |
 | Linguagem | TypeScript 6.0 |
-| IA / Chat | Google Gemini Flash, via função serverless própria (Vercel) |
-| Dados de veículos | Tabela FIPE em tempo real (BrasilAPI) |
 | Fontes | Sora (Google Fonts via Expo) |
 | Ícones | Expo Vector Icons (Feather + MaterialCommunity) |
-| Gráficos | React Native SVG (radar de atributos customizado) |
 | Persistência | AsyncStorage |
-| Estado global | React Context API |
-| Build final | EAS Build (APK instalável) |
+| Estado Global | React Context API |
+| Backend | Funções serverless (Vercel) em `/api`, proxy pro Gemini e pra API de notícias |
+| Dados de veículo | Tabela FIPE real, via BrasilAPI (marca, modelo e preço oficial) |
+| Notícias | APITube (filtro por tópico automotivo) |
+| Web | React Native Web com frame de dispositivo |
 
 ---
 
@@ -84,21 +86,22 @@ Gera um `.apk` instalável direto em dispositivo físico ou emulador, sem depend
 
 ```
 src/
-├── screens/          # HomeScreen, VeiculosScreen, CompararScreen, ProfileScreen, LoginScreen
+├── screens/          # Início, Veículos, Comparar, Notícias, Perfil, Login
 ├── components/
-│   ├── home/         # Chat, Sidebar, composer, header
-│   ├── veiculos/      # Filtro, card de resultado, ficha do veículo
-│   ├── comparar/      # Componentes da tela de comparação
-│   ├── shared/        # Peças de UI compartilhadas (ex.: filtro de marca)
-│   └── splash/        # Animação de abertura
-├── context/           # Navigation, Auth, Favorites, Chat, ConversasRecentes, RecentlyViewed
-├── services/           # fipeApi.ts (FIPE), rivaChatApi.ts (cliente do backend de chat)
-├── hooks/              # useFavorites, useFipePrice, useConversasRecentes, useRecentlyViewed
-├── theme/              # Design tokens (cores, tipografia, border-radius)
-└── types/              # Interfaces TypeScript (Vehicle)
+│   ├── home/          # Chat (ChatInput, ChatThread), Sidebar, Header
+│   ├── veiculos/       # FilterFlow (filtro), VeiculoFicha, VeiculoResultCard
+│   └── shared/         # FilterChips — peças de filtro reusadas por Veículos e Comparar
+├── context/           # AuthContext, ChatContext, FavoritesContext, RecentlyViewedContext,
+│                       # ConversasRecentesContext, NavigationContext
+├── hooks/             # useFavorites, useFipePrice, useRecentlyViewed, useConversasRecentes
+├── services/          # fipeApi (BrasilAPI), rivaChatApi (backend de chat), newsApi (backend de notícias)
+├── mock/              # Fallback de notícias, usado só se a API estiver fora do ar
+├── theme/             # Design tokens (cores, border-radius)
+└── types/             # Interface Vehicle
 
 api/
-└── chat.ts             # Função serverless (Vercel) — proxy para o Gemini Flash
+├── chat.ts            # Proxy serverless pro Gemini Flash
+└── news.ts            # Proxy serverless pra APITube
 ```
 
 ---
