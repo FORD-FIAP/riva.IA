@@ -14,6 +14,7 @@ interface ChatHistoryItem {
 interface ChatRequestBody {
   message: string;
   history?: ChatHistoryItem[];
+  preferences?: string;
 }
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -60,8 +61,15 @@ export default async function handler(req: any, res: any) {
   }
 
   const history = body.history ?? [];
+  const preferences = body.preferences?.trim();
+  const systemPrompt = preferences
+    ? `${SYSTEM_PROMPT} O usuário informou estas preferências pessoais sobre carros: "${preferences}". ` +
+      'Leve isso em conta pra personalizar sugestões e comentários quando fizer sentido — sem forçar, ' +
+      'só quando a conversa realmente se beneficiar disso.'
+    : SYSTEM_PROMPT;
+
   const contents = [
-    { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
+    { role: 'user', parts: [{ text: systemPrompt }] },
     { role: 'model', parts: [{ text: 'Entendido, vou ajudar assim.' }] },
     ...history.map((h) => ({
       role: h.role === 'user' ? 'user' : 'model',

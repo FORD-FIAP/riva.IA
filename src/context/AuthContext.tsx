@@ -32,6 +32,10 @@ interface AuthContextValue {
   user: User | null;
   isAuthenticated: boolean;
   login: (payload: RegisterPayload) => void;
+  /** Cria a conta (registra o e-mail) e já loga com ela. */
+  register: (payload: RegisterPayload) => void;
+  /** Nome cadastrado pra esse e-mail, ou null se nenhuma conta existe com ele. */
+  findAccount: (email: string) => string | null;
   updateProfile: (updates: ProfileUpdates) => void;
   logout: () => void;
   authPrompt: AuthPromptContext | null;
@@ -41,11 +45,14 @@ interface AuthContextValue {
 }
 
 const STORAGE_KEY = '@riva/user';
+const ACCOUNTS_STORAGE_KEY = '@riva/accounts';
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   isAuthenticated: false,
   login: () => {},
+  register: () => {},
+  findAccount: () => null,
   updateProfile: () => {},
   logout: () => {},
   authPrompt: null,
@@ -61,6 +68,7 @@ function firstNameOf(full: string): string {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [accounts, setAccounts] = useState<Record<string, string>>({});
   const [authPrompt, setAuthPrompt] = useState<AuthPromptContext | null>(null);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
@@ -71,6 +79,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (raw) {
           const parsed = JSON.parse(raw) as User;
           if (parsed && parsed.fullName) setUser(parsed);
+        }
+        const rawAccounts = await AsyncStorage.getItem(ACCOUNTS_STORAGE_KEY);
+        if (rawAccounts) {
+          const parsedAccounts = JSON.parse(rawAccounts);
+          if (parsedAccounts && typeof parsedAccounts === 'object') setAccounts(parsedAccounts);
         }
       } catch {
         /* noop */
@@ -86,6 +99,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     else AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
   }, [user, hydrated]);
 
+  useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts)).catch(() => {});
+  }, [accounts, hydrated]);
+
   function login({ fullName, email }: RegisterPayload) {
     const nickname = firstNameOf(fullName);
     setUser({
@@ -95,6 +113,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       preferences: '',
       name: nickname,
     });
+  }
+
+  function register({ fullName, email }: RegisterPayload) {
+    const key = email.trim().toLowerCase();
+    setAccounts((prev) => ({ ...prev, [key]: fullName.trim() }));
+    login({ fullName, email });
+  }
+
+  function findAccount(email: string): string | null {
+    return accounts[email.trim().toLowerCase()] ?? null;
   }
 
   function updateProfile(updates: ProfileUpdates) {
@@ -131,6 +159,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isAuthenticated: user !== null,
         login,
+        register,
+        findAccount,
         updateProfile,
         logout: () => setUser(null),
         authPrompt,

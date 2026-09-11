@@ -12,15 +12,33 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../theme/colors';
 import { getFipeBrands, FipeBrand } from '../../services/fipeApi';
-import { FilterSheetHeader, FilterClearLabel, FilterChipRow, FilterChip } from '../shared/FilterChips';
+import {
+  FilterSheetHeader,
+  FilterClearLabel,
+  FilterChip,
+  FilterLetterIndex,
+  FilterDropdown,
+  PriceRangeSlider,
+} from '../shared/FilterChips';
 
 export interface FilterState {
   brands: string[];
+  bodyStyle: string | null;
+  priceMin: number | null;
+  priceMax: number | null;
 }
 
 export const EMPTY_FILTERS: FilterState = {
   brands: [],
+  bodyStyle: null,
+  priceMin: null,
+  priceMax: null,
 };
+
+const PRICE_MIN = 0;
+const PRICE_MAX = 500000;
+
+const BODY_STYLES = ['Hatch', 'Sedan', 'SUV', 'Picape', 'Esportivo', 'Conversível', 'Perua', 'Minivan'];
 
 interface FilterSheetProps {
   visible: boolean;
@@ -35,6 +53,7 @@ export function FilterSheet({ visible, filters, onChange, onClose }: FilterSheet
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
   const [brands, setBrands] = useState<FipeBrand[]>([]);
+  const [activeLetter, setActiveLetter] = useState<string | null>(null);
 
   useEffect(() => {
     if (visible && brands.length === 0) {
@@ -59,14 +78,33 @@ export function FilterSheet({ visible, filters, onChange, onClose }: FilterSheet
     ]).start();
   }, [visible]);
 
-  const temFiltrosAtivos = filters.brands.length > 0;
+  const temFiltrosAtivos =
+    filters.brands.length > 0 ||
+    filters.bodyStyle !== null ||
+    filters.priceMin !== null ||
+    filters.priceMax !== null;
 
   function toggle<T>(list: T[], value: T): T[] {
     return list.includes(value) ? list.filter((i) => i !== value) : [...list, value];
   }
 
   function toggleBrand(brand: string) {
-    onChange({ brands: toggle(filters.brands, brand) });
+    onChange({ ...filters, brands: toggle(filters.brands, brand) });
+  }
+
+  function selectBodyStyle(style: string) {
+    onChange({ ...filters, bodyStyle: filters.bodyStyle === style ? null : style });
+  }
+
+  function changePriceRange(priceMin: number, priceMax: number) {
+    onChange({ ...filters, priceMin, priceMax });
+  }
+
+  const availableLetters = [...new Set(brands.map((b) => b.nome[0]?.toUpperCase()).filter(Boolean))].sort();
+  const visibleBrands = activeLetter ? brands.filter((b) => b.nome[0]?.toUpperCase() === activeLetter) : [];
+
+  function selectLetter(letter: string) {
+    setActiveLetter((prev) => (prev === letter ? null : letter));
   }
 
   return (
@@ -81,20 +119,47 @@ export function FilterSheet({ visible, filters, onChange, onClose }: FilterSheet
         <FilterSheetHeader
           title="Filtro"
           onClose={onClose}
-          rightExtra={temFiltrosAtivos ? <FilterClearLabel onPress={() => onChange(EMPTY_FILTERS)} /> : undefined}
+          rightExtra={temFiltrosAtivos ? <FilterClearLabel onPress={() => { setActiveLetter(null); onChange(EMPTY_FILTERS); }} /> : undefined}
         />
 
         <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
-          <FilterChipRow label="Marca">
-            {brands.map((brand) => (
-              <FilterChip
-                key={brand.valor}
-                label={brand.nome}
-                active={filters.brands.includes(brand.nome)}
-                onPress={() => toggleBrand(brand.nome)}
-              />
-            ))}
-          </FilterChipRow>
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Marca</Text>
+            <FilterLetterIndex letters={availableLetters} active={activeLetter} onSelect={selectLetter} />
+            {activeLetter && (
+              <ScrollView style={styles.brandScroll} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                <View style={styles.brandWrap}>
+                  {visibleBrands.map((brand) => (
+                    <FilterChip
+                      key={brand.valor}
+                      label={brand.nome}
+                      active={filters.brands.includes(brand.nome)}
+                      onPress={() => toggleBrand(brand.nome)}
+                    />
+                  ))}
+                </View>
+              </ScrollView>
+            )}
+          </View>
+
+          <FilterDropdown
+            label="Categoria"
+            placeholder="Selecione uma categoria"
+            value={filters.bodyStyle}
+            options={BODY_STYLES}
+            onSelect={selectBodyStyle}
+          />
+
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Preço</Text>
+            <PriceRangeSlider
+              min={PRICE_MIN}
+              max={PRICE_MAX}
+              valueMin={filters.priceMin ?? PRICE_MIN}
+              valueMax={filters.priceMax ?? PRICE_MAX}
+              onChange={changePriceRange}
+            />
+          </View>
 
           <View style={{ height: 12 }} />
         </ScrollView>
@@ -126,6 +191,29 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   scroll: {},
+  section: {
+    paddingTop: 16,
+    marginTop: 4,
+    gap: 6,
+  },
+  sectionLabel: {
+    color: Colors.accent,
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Sora_600SemiBold',
+    paddingHorizontal: 20,
+    marginBottom: 4,
+  },
+  brandScroll: {
+    maxHeight: 180,
+  },
+  brandWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+  },
   footer: {
     flexDirection: 'row',
     gap: 12,

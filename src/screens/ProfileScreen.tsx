@@ -1,4 +1,4 @@
-/** Tela de Perfil — exibe dados do usuário logado, permite editar nickname/email e preferências. */
+/** Tela de Configurações — dados do usuário logado, agrupados em cards (inspirado no Settings do Claude). */
 import React, { useState } from 'react';
 import {
   View,
@@ -18,12 +18,11 @@ import { useNavigation } from '../context/NavigationContext';
 
 const DISABLED_TOOLTIP = 'Botão atualmente desativado';
 
-type DisabledKey = 'notif' | 'config' | 'support';
+type DisabledKey = 'notif' | 'support';
 
 const DISABLED_ITEMS: { key: DisabledKey; label: string; icon: React.ComponentProps<typeof Feather>['name'] }[] = [
-  { key: 'notif',   label: 'Notificações',  icon: 'bell'          },
-  { key: 'config',  label: 'Configuração',  icon: 'settings'      },
-  { key: 'support', label: 'Suporte',       icon: 'help-circle'   },
+  { key: 'notif',   label: 'Notificações', icon: 'bell'        },
+  { key: 'support', label: 'Suporte',      icon: 'help-circle' },
 ];
 
 function isValidEmail(v: string): boolean {
@@ -68,78 +67,76 @@ export function ProfileScreen() {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigate('Início')} style={styles.backBtn}>
-          <Feather name="chevron-left" size={20} color={Colors.textPrimary} />
-          <Text style={styles.backLabel}>Voltar</Text>
+        <TouchableOpacity onPress={() => navigate('Início')} style={styles.closeBtn}>
+          <Feather name="x" size={18} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleLogout} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Feather name="log-out" size={18} color={Colors.textMuted} />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Configurações</Text>
+        <View style={{ width: 26 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Nome completo */}
-        <View style={styles.fieldGroup}>
-          <View style={styles.labelRow}>
-            <Feather name="user" size={12} color={Colors.accent} />
-            <Text style={styles.fieldLabel}>Nome completo</Text>
-            <Text style={styles.fieldHint}>· definido no cadastro</Text>
+        {/* Card de conta — avatar + nome + e-mail */}
+        <View style={styles.accountCard}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarLetter}>{user.name.charAt(0).toUpperCase()}</Text>
           </View>
-          <View style={[styles.input, styles.inputReadonly]}>
-            <Text style={styles.inputReadonlyText}>{user.fullName}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.accountName}>{user.fullName}</Text>
+            <Text style={styles.accountEmail}>{user.email}</Text>
           </View>
         </View>
 
-        {/* Nickname */}
-        <View style={styles.fieldGroup}>
-          <View style={styles.labelRow}>
-            <Feather name="smile" size={12} color={Colors.accent} />
-            <Text style={styles.fieldLabel}>Nickname</Text>
-            <Text style={styles.fieldHint}>· como a RIVA vai te chamar</Text>
+        {/* Conta — campos editáveis */}
+        <Text style={styles.sectionLabel}>CONTA</Text>
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Nome completo</Text>
+            <Text style={styles.rowValueReadonly}>{user.fullName}</Text>
           </View>
-          <TextInput
-            style={styles.input}
-            placeholder="Como prefere ser chamado?"
-            placeholderTextColor={Colors.textMuted}
-            value={nickname}
-            onChangeText={setNickname}
-          />
-        </View>
-
-        {/* Email */}
-        <View style={styles.fieldGroup}>
-          <View style={styles.labelRow}>
-            <Feather name="mail" size={12} color={Colors.accent} />
-            <Text style={styles.fieldLabel}>E-mail</Text>
+          <View style={styles.rowDivider} />
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Nickname</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="Como te chamar?"
+              placeholderTextColor={Colors.textHint}
+              value={nickname}
+              onChangeText={setNickname}
+              textAlign="right"
+            />
           </View>
-          <TextInput
-            style={styles.input}
-            placeholder="seu@email.com"
-            placeholderTextColor={Colors.textMuted}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
-          />
+          <View style={styles.rowDivider} />
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>E-mail</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="seu@email.com"
+              placeholderTextColor={Colors.textHint}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+              textAlign="right"
+            />
+          </View>
         </View>
+        <Text style={styles.cardHint}>A RIVA usa o nickname pra te chamar no chat.</Text>
 
         {/* Preferências */}
-        <View style={styles.fieldGroup}>
-          <View style={styles.labelRow}>
-            <Feather name="heart" size={12} color={Colors.accent} />
-            <Text style={styles.fieldLabel}>Suas preferências</Text>
-          </View>
+        <Text style={[styles.sectionLabel, { marginTop: 20 }]}>PREFERÊNCIAS</Text>
+        <View style={styles.card}>
           <TextInput
-            style={[styles.input, styles.prefsInput]}
+            style={styles.prefsInput}
             placeholder="Ex.: gosto de picapes Ford e Toyota, prefiro motor diesel"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={Colors.textHint}
             value={preferences}
             onChangeText={setPreferences}
             multiline
             textAlignVertical="top"
           />
         </View>
+        <Text style={styles.cardHint}>Suas preferências ajudam a RIVA a personalizar as respostas.</Text>
 
         {/* Botão salvar */}
         <TouchableOpacity
@@ -154,37 +151,47 @@ export function ProfileScreen() {
           </Text>
         </TouchableOpacity>
 
-        {/* Botões desativados */}
-        <View style={styles.disabledGroup}>
-          {DISABLED_ITEMS.map((item) => {
+        {/* App — itens ainda não implementados */}
+        <Text style={[styles.sectionLabel, { marginTop: 20 }]}>APP</Text>
+        <View style={styles.card}>
+          {DISABLED_ITEMS.map((item, i) => {
             const isHovered = hovered === item.key;
             return (
-              <View key={item.key} style={styles.disabledWrapper}>
-                <Pressable
-                  onHoverIn={() => setHovered(item.key)}
-                  onHoverOut={() => setHovered((h) => (h === item.key ? null : h))}
-                  // No nativo (sem hover), o toque também revela a mensagem.
-                  onPress={() => setHovered((h) => (h === item.key ? null : item.key))}
-                  // Web: title nativo do navegador como fallback de acessibilidade.
-                  {...(Platform.OS === 'web' ? { accessibilityLabel: DISABLED_TOOLTIP } : {})}
-                  style={({ hovered: rnHovered }: any) => [
-                    styles.disabledRow,
-                    (isHovered || rnHovered) && styles.disabledRowHovered,
-                  ]}
-                >
-                  <Feather name={item.icon} size={16} color={Colors.textMuted} />
-                  <Text style={styles.disabledLabel}>{item.label}</Text>
-                  <Feather name="lock" size={12} color={Colors.textHint} />
-                </Pressable>
-                {isHovered && (
-                  <View style={styles.tooltip} pointerEvents="none">
-                    <Text style={styles.tooltipText}>{DISABLED_TOOLTIP}</Text>
-                  </View>
-                )}
-              </View>
+              <React.Fragment key={item.key}>
+                {i > 0 && <View style={styles.rowDivider} />}
+                <View style={styles.disabledWrapper}>
+                  <Pressable
+                    onHoverIn={() => setHovered(item.key)}
+                    onHoverOut={() => setHovered((h) => (h === item.key ? null : h))}
+                    onPress={() => setHovered((h) => (h === item.key ? null : item.key))}
+                    {...(Platform.OS === 'web' ? { accessibilityLabel: DISABLED_TOOLTIP } : {})}
+                    style={({ hovered: rnHovered }: any) => [
+                      styles.row,
+                      (isHovered || rnHovered) && styles.disabledRowHovered,
+                    ]}
+                  >
+                    <View style={styles.disabledLabelRow}>
+                      <Feather name={item.icon} size={15} color={Colors.textMuted} />
+                      <Text style={styles.disabledLabel}>{item.label}</Text>
+                    </View>
+                    <Feather name="lock" size={13} color={Colors.textHint} />
+                  </Pressable>
+                  {isHovered && (
+                    <View style={styles.tooltip} pointerEvents="none">
+                      <Text style={styles.tooltipText}>{DISABLED_TOOLTIP}</Text>
+                    </View>
+                  )}
+                </View>
+              </React.Fragment>
             );
           })}
         </View>
+
+        {/* Log out — mesmo peso visual de uma ação destrutiva */}
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+          <Feather name="log-out" size={16} color="#FF6B6B" />
+          <Text style={styles.logoutLabel}>Sair da conta</Text>
+        </TouchableOpacity>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -201,13 +208,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backLabel: {
-    color: Colors.textPrimary,
-    fontSize: 13,
-    fontFamily: 'Sora_500Medium',
+  closeBtn: {
+    width: 26,
+    alignItems: 'flex-start',
   },
   headerTitle: {
     color: Colors.textPrimary,
@@ -217,88 +222,97 @@ const styles = StyleSheet.create({
 
   scroll: { paddingHorizontal: 20, paddingTop: 8 },
 
-  avatarBlock: {
+  accountCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    gap: 6,
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.action,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  avatarLetter: {
-    color: Colors.textPrimary,
-    fontSize: 30,
-    fontFamily: 'Sora_700Bold',
-  },
-  helloName: {
-    color: Colors.textPrimary,
-    fontSize: 18,
-    fontFamily: 'Sora_700Bold',
-  },
-  helloEmail: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    fontFamily: 'Sora_400Regular',
-  },
-
-  fieldGroup: { marginBottom: 14 },
-  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  fieldLabel: {
-    color: Colors.accent,
-    fontSize: 12,
-    fontFamily: 'Sora_600SemiBold',
-  },
-  fieldHint: {
-    color: Colors.textMuted,
-    fontSize: 11,
-    fontFamily: 'Sora_400Regular',
-  },
-  input: {
-    backgroundColor: Colors.surface,
-    borderRadius: Colors.radiusMd,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: Colors.textPrimary,
-    fontSize: 13,
-    fontFamily: 'Sora_400Regular',
-  },
-  inputReadonly: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderStyle: 'dashed',
-  },
-  inputReadonlyText: {
-    color: Colors.textMuted,
-    fontSize: 13,
-    fontFamily: 'Sora_400Regular',
-  },
-
-  prefsBox: {
+    gap: 14,
     backgroundColor: Colors.surface,
     borderRadius: Colors.radiusLg,
     borderWidth: 1,
-    borderColor: Colors.borderStrong,
-    padding: 14,
-    marginTop: 8,
-    marginBottom: 16,
+    borderColor: Colors.border,
+    padding: 16,
+    marginBottom: 20,
   },
-  prefsHelper: {
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.action,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarLetter: {
+    color: Colors.textPrimary,
+    fontSize: 20,
+    fontFamily: 'Sora_700Bold',
+  },
+  accountName: {
+    color: Colors.textPrimary,
+    fontSize: 15,
+    fontFamily: 'Sora_700Bold',
+  },
+  accountEmail: {
     color: Colors.textSecondary,
     fontSize: 12,
     fontFamily: 'Sora_400Regular',
-    lineHeight: 18,
-    marginBottom: 10,
+    marginTop: 2,
+  },
+
+  sectionLabel: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    fontFamily: 'Sora_600SemiBold',
+    marginBottom: 8,
+  },
+  card: {
+    backgroundColor: Colors.surface,
+    borderRadius: Colors.radiusLg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+  },
+  cardHint: {
+    color: Colors.textHint,
+    fontSize: 11,
+    fontFamily: 'Sora_400Regular',
+    marginTop: 6,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  rowDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  rowLabel: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontFamily: 'Sora_400Regular',
+  },
+  rowValueReadonly: {
+    color: Colors.textMuted,
+    fontSize: 13,
+    fontFamily: 'Sora_400Regular',
+  },
+  rowInput: {
+    flex: 1,
+    color: Colors.textPrimary,
+    fontSize: 13,
+    fontFamily: 'Sora_500Medium',
   },
   prefsInput: {
     minHeight: 90,
-    paddingTop: 12,
+    padding: 14,
+    color: Colors.textPrimary,
+    fontSize: 13,
+    fontFamily: 'Sora_400Regular',
   },
 
   cta: {
@@ -309,7 +323,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.action,
     borderRadius: Colors.radiusPill,
     paddingVertical: 14,
-    marginBottom: 24,
+    marginTop: 16,
   },
   ctaDisabled: {
     backgroundColor: Colors.surface,
@@ -323,41 +337,25 @@ const styles = StyleSheet.create({
   },
   ctaLabelDisabled: { color: Colors.textMuted },
 
-  disabledGroup: {
-    gap: 10,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
   disabledWrapper: {
     position: 'relative',
   },
-  disabledRow: {
+  disabledLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: Colors.radiusMd,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    opacity: 0.55,
-    ...(Platform.OS === 'web' ? ({ cursor: 'not-allowed' } as any) : null),
+    gap: 10,
   },
   disabledRowHovered: {
-    opacity: 0.75,
-    borderColor: Colors.borderStrong,
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
   disabledLabel: {
-    flex: 1,
     color: Colors.textSecondary,
     fontSize: 13,
     fontFamily: 'Sora_500Medium',
   },
   tooltip: {
     position: 'absolute',
-    top: -30,
+    top: -28,
     alignSelf: 'center',
     backgroundColor: Colors.surface2,
     borderWidth: 1,
@@ -375,5 +373,23 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: 11,
     fontFamily: 'Sora_500Medium',
+  },
+
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,107,107,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,107,0.3)',
+    borderRadius: Colors.radiusLg,
+    paddingVertical: 15,
+    marginTop: 28,
+  },
+  logoutLabel: {
+    color: '#FF6B6B',
+    fontSize: 14,
+    fontFamily: 'Sora_700Bold',
   },
 });

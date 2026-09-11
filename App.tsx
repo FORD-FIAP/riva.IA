@@ -19,6 +19,7 @@ import { ConversasRecentesProvider } from './src/context/ConversasRecentesContex
 import { HomeScreen } from './src/screens/HomeScreen';
 import { VeiculosScreen } from './src/screens/VeiculosScreen';
 import { CompararScreen } from './src/screens/CompararScreen';
+import { NoticiasScreen } from './src/screens/NoticiasScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { Sidebar } from './src/components/home/Sidebar';
@@ -37,6 +38,8 @@ function AppScreens() {
           <VeiculosScreen />
         ) : activeScreen === 'Comparar' ? (
           <CompararScreen />
+        ) : activeScreen === 'Notícias' ? (
+          <NoticiasScreen />
         ) : activeScreen === 'Perfil' ? (
           <ProfileScreen />
         ) : (

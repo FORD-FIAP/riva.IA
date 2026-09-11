@@ -8,13 +8,15 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
+  Alert,
+  Image,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons, AntDesign } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
-import { RivaOrb } from '../components/home/RivaOrb';
 import { useAuth, AuthPromptContext } from '../context/AuthContext';
+import { useFipePrice } from '../hooks/useFipePrice';
 import { Vehicle } from '../types/vehicle';
 
 function isValidEmail(v: string): boolean {
@@ -51,13 +53,15 @@ function copyForContext(ctx: AuthPromptContext): { title: string; cta: string; b
 }
 
 export function LoginScreen() {
-  const { authPrompt, closeLogin, login, runPendingAction } = useAuth();
+  const { authPrompt, closeLogin, login, register, findAccount, runPendingAction } = useAuth();
   const { width: screenWidth } = useWindowDimensions();
+  const [mode, setMode] = useState<'login' | 'cadastro'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
   const [shouldRender, setShouldRender] = useState(false);
@@ -88,19 +92,41 @@ export function LoginScreen() {
   const activePrompt = authPrompt ?? lastPrompt;
   if (!activePrompt) return null;
 
-  const { title, cta, badge } = copyForContext(activePrompt);
+  const { title: cadastroTitle, cta: cadastroCta, badge } = copyForContext(activePrompt);
+  const title = mode === 'login' ? 'Bem-vindo de volta!' : cadastroTitle;
+  const cta = mode === 'login' ? 'Entrar' : cadastroCta;
+
   const formValid =
-    name.trim().length > 0 &&
-    isValidEmail(email) &&
-    password.length >= 6 &&
-    agreed;
+    mode === 'login'
+      ? isValidEmail(email) && password.length >= 6
+      : name.trim().length > 0 && isValidEmail(email) && password.length >= 6 && agreed;
 
   function handleSubmit() {
     if (!formValid) return;
-    login({ fullName: name, email });
+
+    if (mode === 'login') {
+      const contaExistente = findAccount(email);
+      if (!contaExistente) {
+        setLoginError(true);
+        return;
+      }
+      login({ fullName: contaExistente, email });
+    } else {
+      register({ fullName: name, email });
+    }
+
     runPendingAction();
     closeLogin();
-    setName(''); setEmail(''); setPassword(''); setAgreed(false);
+    setName(''); setEmail(''); setPassword(''); setAgreed(false); setLoginError(false);
+  }
+
+  function irParaCadastro() {
+    setLoginError(false);
+    setMode('cadastro');
+  }
+
+  function handleGooglePress() {
+    Alert.alert('Ainda em Produção.');
   }
 
   return (
@@ -118,9 +144,13 @@ export function LoginScreen() {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-          {/* Orb */}
+          {/* Logo */}
           <View style={styles.orbWrapper}>
-            <RivaOrb />
+            <Image
+              source={require('../../assets/logo-riva.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
 
           <Text style={styles.title}>{title}</Text>
@@ -142,7 +172,6 @@ export function LoginScreen() {
                 <Text style={styles.vsLabel}>VS</Text>
                 <VehicleMini vehicle={activePrompt.vehicleB} accent="#7B6FE8" />
               </View>
-              <Text style={styles.contextFooter}>13 atributos analisados pela RIVA</Text>
             </View>
           )}
 
@@ -155,14 +184,14 @@ export function LoginScreen() {
               <View style={styles.singleRow}>
                 <VehicleMini vehicle={activePrompt.vehicle} accent={Colors.accent} />
               </View>
-              <Text style={styles.contextFooter}>{activePrompt.vehicle.preco}</Text>
+              <VehiclePriceFooter vehicle={activePrompt.vehicle} />
             </View>
           )}
 
-          {/* Botão Google */}
-          <TouchableOpacity style={styles.socialBtn} activeOpacity={0.85}>
-            <AntDesign name="google" size={16} color="#EA4335" />
-            <Text style={styles.socialLabel}>Continuar com Google</Text>
+          {/* Botão Google — desativado, ainda não integrado de verdade */}
+          <TouchableOpacity style={[styles.socialBtn, styles.socialBtnDisabled]} activeOpacity={0.7} onPress={handleGooglePress}>
+            <AntDesign name="google" size={16} color={Colors.textMuted} />
+            <Text style={[styles.socialLabel, styles.socialLabelDisabled]}>Continuar com Google</Text>
           </TouchableOpacity>
 
           {/* Divisor "OU" */}
@@ -173,19 +202,21 @@ export function LoginScreen() {
           </View>
 
           {/* Formulário */}
-          <View style={styles.fieldGroup}>
-            <View style={styles.labelRow}>
-              <Feather name="user" size={12} color={Colors.accent} />
-              <Text style={styles.fieldLabel}>Nome completo</Text>
+          {mode === 'cadastro' && (
+            <View style={styles.fieldGroup}>
+              <View style={styles.labelRow}>
+                <Feather name="user" size={12} color={Colors.accent} />
+                <Text style={styles.fieldLabel}>Nome completo</Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Como podemos te chamar?"
+                placeholderTextColor={Colors.textMuted}
+                value={name}
+                onChangeText={setName}
+              />
             </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Como podemos te chamar?"
-              placeholderTextColor={Colors.textMuted}
-              value={name}
-              onChangeText={setName}
-            />
-          </View>
+          )}
 
           <View style={styles.fieldGroup}>
             <View style={styles.labelRow}>
@@ -224,20 +255,35 @@ export function LoginScreen() {
             </View>
           </View>
 
-          {/* Termos */}
-          <TouchableOpacity
-            style={styles.termsRow}
-            onPress={() => setAgreed((a) => !a)}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.checkbox, agreed && styles.checkboxChecked]}>
-              {agreed && <Feather name="check" size={11} color={Colors.bg} />}
+          {/* Erro de login — conta não encontrada */}
+          {mode === 'login' && loginError && (
+            <View style={styles.errorBox}>
+              <Feather name="alert-circle" size={14} color="#FF6B6B" />
+              <Text style={styles.errorText}>
+                Opa, parece que você não tem uma conta. Pode tentar novamente?
+              </Text>
+              <TouchableOpacity onPress={irParaCadastro}>
+                <Text style={styles.errorLink}>Criar conta</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.termsText}>
-              Concordo com os <Text style={styles.termsLink}>Termos</Text> e{' '}
-              <Text style={styles.termsLink}>Política de Privacidade</Text>
-            </Text>
-          </TouchableOpacity>
+          )}
+
+          {/* Termos */}
+          {mode === 'cadastro' && (
+            <TouchableOpacity
+              style={styles.termsRow}
+              onPress={() => setAgreed((a) => !a)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkbox, agreed && styles.checkboxChecked]}>
+                {agreed && <Feather name="check" size={11} color={Colors.bg} />}
+              </View>
+              <Text style={styles.termsText}>
+                Concordo com os <Text style={styles.termsLink}>Termos</Text> e{' '}
+                <Text style={styles.termsLink}>Política de Privacidade</Text>
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* CTA */}
           <TouchableOpacity
@@ -252,11 +298,15 @@ export function LoginScreen() {
             <Feather name="chevron-right" size={16} color={!formValid ? Colors.textMuted : Colors.textPrimary} />
           </TouchableOpacity>
 
-          {/* Login link */}
-          <View style={styles.loginRow}>
-            <Text style={styles.loginText}>Já tem conta? </Text>
-            <TouchableOpacity>
-              <Text style={styles.loginLink}>Entrar</Text>
+          {/* Área de criar conta / voltar pro login */}
+          <View style={styles.switchModeRow}>
+            <Text style={styles.switchModeText}>
+              {mode === 'login' ? 'Ainda não tem conta?' : 'Já tem conta?'}
+            </Text>
+            <TouchableOpacity onPress={() => { setLoginError(false); setMode((m) => (m === 'login' ? 'cadastro' : 'login')); }}>
+              <Text style={styles.switchModeLink}>
+                {mode === 'login' ? 'Criar conta' : 'Entrar'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -265,6 +315,12 @@ export function LoginScreen() {
       </SafeAreaView>
     </Animated.View>
   );
+}
+
+/** Preço real da FIPE quando disponível, senão o mockado — mesmo hook usado no resto do app. */
+function VehiclePriceFooter({ vehicle }: { vehicle: Vehicle }) {
+  const fipe = useFipePrice(vehicle.fipeCode, vehicle.preco ?? '');
+  return <Text style={styles.contextFooter}>{fipe.price || 'Preço indisponível'}</Text>;
 }
 
 function VehicleMini({ vehicle, accent }: { vehicle: Vehicle; accent: string }) {
@@ -313,6 +369,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 24, paddingTop: 16 },
 
   orbWrapper: { alignItems: 'center', marginBottom: 16 },
+  logo: { width: 72, height: 72 },
 
   title: {
     color: Colors.textPrimary,
@@ -412,6 +469,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Sora_600SemiBold',
   },
+  socialBtnDisabled: {
+    opacity: 0.5,
+  },
+  socialLabelDisabled: {
+    color: Colors.textMuted,
+  },
 
   // OU
   orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 16 },
@@ -453,6 +516,33 @@ const styles = StyleSheet.create({
     right: 12,
     height: '100%',
     justifyContent: 'center',
+  },
+
+  // Erro de login
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    backgroundColor: 'rgba(255,107,107,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,107,0.3)',
+    borderRadius: Colors.radiusMd,
+    padding: 12,
+    marginBottom: 14,
+  },
+  errorText: {
+    flex: 1,
+    color: '#FF6B6B',
+    fontSize: 12,
+    fontFamily: 'Sora_400Regular',
+    lineHeight: 17,
+  },
+  errorLink: {
+    color: '#FF6B6B',
+    fontSize: 12,
+    fontFamily: 'Sora_700Bold',
+    textDecorationLine: 'underline',
   },
 
   // Termos
@@ -507,17 +597,18 @@ const styles = StyleSheet.create({
   },
   ctaLabelDisabled: { color: Colors.textMuted },
 
-  loginRow: {
+  switchModeRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 16,
+    gap: 4,
+    marginTop: 18,
   },
-  loginText: {
+  switchModeText: {
     color: Colors.textSecondary,
     fontSize: 12,
     fontFamily: 'Sora_400Regular',
   },
-  loginLink: {
+  switchModeLink: {
     color: Colors.accent,
     fontSize: 12,
     fontFamily: 'Sora_700Bold',
