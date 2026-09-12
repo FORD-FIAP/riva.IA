@@ -17,6 +17,7 @@ import { Colors } from '../theme/colors';
 import { getFipeBrands, getFipeModels, buildVehicleFromFipe, cacheVehicles, getCachedVehicle, FipeBrand } from '../services/fipeApi';
 import { Vehicle } from '../types/vehicle';
 import { useNavigation } from '../context/NavigationContext';
+import { CATEGORIAS, CategoriaVeiculo, MOCK_VEHICLES } from '../mock/mockVehicles';
 
 export function VeiculosScreen() {
   const { openSidebar, pendingVehicleId, clearPendingVehicle } = useNavigation();
@@ -24,6 +25,7 @@ export function VeiculosScreen() {
   const [allBrands, setAllBrands] = useState<FipeBrand[]>([]);
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedCategoria, setSelectedCategoria] = useState<CategoriaVeiculo | null>(null);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Vehicle[]>([]);
 
@@ -42,21 +44,35 @@ export function VeiculosScreen() {
   }, []);
 
   function selectLetter(letter: string) {
+    setSelectedCategoria(null);
     setActiveLetter((prev) => (prev === letter ? null : letter));
   }
 
   function toggleBrand(nome: string) {
+    setSelectedCategoria(null);
     setSelectedBrands((prev) => (prev.includes(nome) ? prev.filter((b) => b !== nome) : [...prev, nome]));
+  }
+
+  function selectCategoria(categoria: CategoriaVeiculo) {
+    setActiveLetter(null);
+    setSelectedBrands([]);
+    setSelectedCategoria((prev) => (prev === categoria ? null : categoria));
   }
 
   const availableLetters = [...new Set(allBrands.map((b) => b.nome[0]?.toUpperCase()).filter(Boolean))].sort();
   const visibleBrands = activeLetter ? allBrands.filter((b) => b.nome[0]?.toUpperCase() === activeLetter) : [];
-  const showResults = selectedBrands.length > 0;
+  const showResults = selectedBrands.length > 0 || selectedCategoria !== null;
 
-  // Busca os modelos reais das marcas selecionadas no alfabeto.
+  // Categoria: mostra só o catálogo curado (10 veículos com ficha completa).
   useEffect(() => {
-    if (!showResults) {
-      setResults([]);
+    if (!selectedCategoria) return;
+    setResults(MOCK_VEHICLES.filter((v) => v.categoria === selectedCategoria));
+  }, [selectedCategoria]);
+
+  // Marca: busca os modelos reais das marcas selecionadas no alfabeto (FIPE, ao vivo).
+  useEffect(() => {
+    if (selectedBrands.length === 0) {
+      if (!selectedCategoria) setResults([]);
       return;
     }
 
@@ -109,7 +125,7 @@ export function VeiculosScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Marca em ordem alfabética — igual à tela de Comparar */}
+      {/* Marca em ordem alfabética (busca ao vivo na FIPE) — igual à tela de Comparar */}
       <View style={styles.inlineFilterBlock}>
         <FilterChipRow label="Marca">
           <FilterLetterIndex letters={availableLetters} active={activeLetter} onSelect={selectLetter} />
@@ -126,6 +142,20 @@ export function VeiculosScreen() {
             ))}
           </View>
         )}
+      </View>
+
+      {/* Categoria — catálogo curado com ficha técnica completa (10 veículos) */}
+      <View style={styles.inlineFilterBlock}>
+        <FilterChipRow label="Categoria">
+          {CATEGORIAS.map((categoria) => (
+            <FilterChip
+              key={categoria}
+              label={categoria}
+              active={selectedCategoria === categoria}
+              onPress={() => selectCategoria(categoria)}
+            />
+          ))}
+        </FilterChipRow>
       </View>
 
       <ScrollView
@@ -163,7 +193,8 @@ export function VeiculosScreen() {
             </View>
             <Text style={styles.emptyStateTitle}>Comece sua busca</Text>
             <Text style={styles.emptyStateText}>
-              Escolha uma letra do alfabeto e selecione a marca que procura.
+              Escolha uma marca (A-Z) pra buscar na FIPE, ou uma categoria pra ver
+              os veículos com ficha técnica completa.
             </Text>
           </View>
         )}

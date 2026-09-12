@@ -22,6 +22,26 @@ import { useNavigation } from '../../context/NavigationContext';
 import { useChat } from '../../context/ChatContext';
 import { useFipePrice } from '../../hooks/useFipePrice';
 import { useCarImage } from '../../hooks/useCarImage';
+import { getMockVehicle, FichaTecnica } from '../../mock/mockVehicles';
+
+const SECTION_LABELS: Record<keyof FichaTecnica, string> = {
+  identificacao: 'Identificação',
+  motor: 'Motor',
+  desempenho: 'Desempenho',
+  transmissao: 'Transmissão / Tração',
+  dimensoes: 'Dimensões',
+  pesoCapacidade: 'Peso e Capacidade',
+  suspensaoFreiosDirecao: 'Suspensão / Freios / Direção',
+  consumoEmissoes: 'Consumo / Emissões',
+  seguranca: 'Segurança',
+  eletricoHibrido: 'Elétrico / Híbrido',
+};
+
+/** "potenciaMaxima" -> "Potência Máxima" (sem acentuar de volta — só separa as palavras). */
+function formatFieldLabel(key: string): string {
+  const spaced = key.replace(/([A-Z])/g, ' $1').toLowerCase();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
 
 interface VeiculoFichaProps {
   vehicle: Vehicle | null;
@@ -41,6 +61,16 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
   const backdropAnim = useRef(new Animated.Value(0)).current;
   const fipe = useFipePrice(vehicle?.fipeCode, vehicle?.preco ?? '');
   const carImage = useCarImage(vehicle?.marca ?? '', vehicle?.modelo);
+  const fichaTecnica = vehicle ? getMockVehicle(vehicle.id)?.fichaTecnica : undefined;
+  const fichaTecnicaSections = fichaTecnica
+    ? (Object.entries(fichaTecnica) as [keyof FichaTecnica, Record<string, string> | undefined][])
+        .map(([key, fields]) => ({
+          key,
+          label: SECTION_LABELS[key],
+          fields: Object.entries(fields ?? {}).filter(([, value]) => value),
+        }))
+        .filter((section) => section.fields.length > 0)
+    : [];
 
   const visible = vehicle !== null;
 
@@ -113,13 +143,26 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
               <IdentItem label={fipe.isLive ? 'Preço (FIPE)' : 'Preço'} value={fipe.price || 'Indisponível'} valueAccent />
             </View>
 
-            <View style={styles.noticeBox}>
-              <Feather name="info" size={14} color={Colors.textMuted} />
-              <Text style={styles.noticeText}>
-                Ficha técnica completa (motor, dimensões, off-road, segurança) ainda não
-                está disponível — vai chegar quando integrarmos uma fonte de dados pra isso.
-              </Text>
-            </View>
+            {fichaTecnicaSections.length > 0 ? (
+              fichaTecnicaSections.map((section) => (
+                <View key={section.key} style={styles.specsSection}>
+                  <Text style={styles.specsSectionTitle}>{section.label}</Text>
+                  <View style={styles.identGrid}>
+                    {section.fields.map(([field, value]) => (
+                      <IdentItem key={field} label={formatFieldLabel(field)} value={value} />
+                    ))}
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View style={styles.noticeBox}>
+                <Feather name="info" size={14} color={Colors.textMuted} />
+                <Text style={styles.noticeText}>
+                  Ficha técnica completa (motor, dimensões, off-road, segurança) ainda não
+                  está disponível — vai chegar quando integrarmos uma fonte de dados pra isso.
+                </Text>
+              </View>
+            )}
 
             <View style={{ height: 12 }} />
           </View>
@@ -272,6 +315,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
     marginBottom: 20,
+  },
+  specsSection: {
+    marginBottom: 8,
+  },
+  specsSectionTitle: {
+    color: Colors.accent,
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Sora_600SemiBold',
+    marginBottom: 8,
   },
   noticeBox: {
     flexDirection: 'row',
