@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -20,6 +21,7 @@ import { useRecentlyViewedContext } from '../../context/RecentlyViewedContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { useChat } from '../../context/ChatContext';
 import { useFipePrice } from '../../hooks/useFipePrice';
+import { useCarImage } from '../../hooks/useCarImage';
 
 interface VeiculoFichaProps {
   vehicle: Vehicle | null;
@@ -38,6 +40,7 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
   const fipe = useFipePrice(vehicle?.fipeCode, vehicle?.preco ?? '');
+  const carImage = useCarImage(vehicle?.marca ?? '', vehicle?.modelo);
 
   const visible = vehicle !== null;
 
@@ -70,9 +73,13 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
       <Animated.View style={[styles.panel, { transform: [{ translateY: slideAnim }] }]}>
         <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll} bounces={false}>
           <View style={styles.imageArea}>
-            <View style={styles.imagePlaceholder}>
-              <MaterialCommunityIcons name="car-side" size={80} color={Colors.action} />
-            </View>
+            {carImage.url ? (
+              <Image source={{ uri: carImage.url }} style={styles.vehicleImage} resizeMode="cover" />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <MaterialCommunityIcons name="car-side" size={80} color={Colors.action} />
+              </View>
+            )}
 
             <View style={styles.brandBadge}>
               <Text style={styles.brandBadgeText}>{vehicle.marca}</Text>
@@ -110,7 +117,7 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
               <Feather name="info" size={14} color={Colors.textMuted} />
               <Text style={styles.noticeText}>
                 Ficha técnica completa (motor, dimensões, off-road, segurança) ainda não
-                está disponível — vai chegar quando integrarmos uma API específica pra isso.
+                está disponível — vai chegar quando integrarmos uma fonte de dados pra isso.
               </Text>
             </View>
 
@@ -207,6 +214,10 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  vehicleImage: {
+    width: '100%',
+    height: '100%',
   },
   brandBadge: {
     position: 'absolute',
