@@ -1,9 +1,8 @@
-/** Tela de busca e listagem de veículos — marca e modelo reais da FIPE */
+/** Tela de busca e listagem de veículos — marca real da FIPE, em ordem alfabética */
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -12,19 +11,19 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { VeiculoResultCard } from '../components/veiculos/VeiculoResultCard';
-import { FilterSheet, FilterState, EMPTY_FILTERS } from '../components/veiculos/FilterFlow';
 import { VeiculoFicha } from '../components/veiculos/VeiculoFicha';
+import { FilterChipRow, FilterChip, FilterLetterIndex } from '../components/shared/FilterChips';
 import { Colors } from '../theme/colors';
-import { getFipeBrands, getFipeModels, buildVehicleFromFipe, cacheVehicles, getCachedVehicle } from '../services/fipeApi';
+import { getFipeBrands, getFipeModels, buildVehicleFromFipe, cacheVehicles, getCachedVehicle, FipeBrand } from '../services/fipeApi';
 import { Vehicle } from '../types/vehicle';
 import { useNavigation } from '../context/NavigationContext';
 
 export function VeiculosScreen() {
   const { openSidebar, pendingVehicleId, clearPendingVehicle } = useNavigation();
-  const [filterOpen, setFilterOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  const [search, setSearch] = useState('');
-  const [appliedFilters, setAppliedFilters] = useState<FilterState>(EMPTY_FILTERS);
+  const [allBrands, setAllBrands] = useState<FipeBrand[]>([]);
+  const [activeLetter, setActiveLetter] = useState<string | null>(null);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Vehicle[]>([]);
 
@@ -36,11 +35,25 @@ export function VeiculosScreen() {
     }
   }, [pendingVehicleId]);
 
-  const hasSearch = search.trim().length > 0;
-  const hasFilters = appliedFilters.brands.length > 0;
-  const showResults = hasSearch || hasFilters;
+  useEffect(() => {
+    getFipeBrands().then((result) => {
+      if (result) setAllBrands([...result].sort((a, b) => a.nome.localeCompare(b.nome)));
+    });
+  }, []);
 
-  // Busca os modelos reais da marca selecionada no filtro (ou faz busca livre por texto).
+  function selectLetter(letter: string) {
+    setActiveLetter((prev) => (prev === letter ? null : letter));
+  }
+
+  function toggleBrand(nome: string) {
+    setSelectedBrands((prev) => (prev.includes(nome) ? prev.filter((b) => b !== nome) : [...prev, nome]));
+  }
+
+  const availableLetters = [...new Set(allBrands.map((b) => b.nome[0]?.toUpperCase()).filter(Boolean))].sort();
+  const visibleBrands = activeLetter ? allBrands.filter((b) => b.nome[0]?.toUpperCase() === activeLetter) : [];
+  const showResults = selectedBrands.length > 0;
+
+  // Busca os modelos reais das marcas selecionadas no alfabeto.
   useEffect(() => {
     if (!showResults) {
       setResults([]);
@@ -60,22 +73,13 @@ export function VeiculosScreen() {
         return;
       }
 
-      const q = search.trim().toLowerCase();
-      const matchingBrands = hasFilters
-        ? brands.filter((b) => appliedFilters.brands.includes(b.nome))
-        : brands.filter((b) => b.nome.toLowerCase().includes(q));
-
-      // Sem marca aplicada e busca muito genérica: evita disparar dezenas de
-      // requisições de uma vez (cada marca = 1 chamada de modelos).
+      const matchingBrands = brands.filter((b) => selectedBrands.includes(b.nome));
       const brandsToQuery = matchingBrands.slice(0, 6);
 
       const vehicleLists = await Promise.all(
         brandsToQuery.map(async (brand) => {
           const models = await getFipeModels(brand.valor);
           if (!models) return [];
-          // A marca já bateu com a busca (matchingBrands) — não faz sentido exigir
-          // que o nome do MODELO também contenha o texto (ex: buscar "Honda" não
-          // deveria zerar resultado só por nenhum modelo se chamar "Honda").
           return models.slice(0, 30).map((m) => buildVehicleFromFipe(brand, m));
         }),
       );
@@ -90,7 +94,7 @@ export function VeiculosScreen() {
     return () => {
       cancelled = true;
     };
-  }, [search, appliedFilters]);
+  }, [selectedBrands]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -105,29 +109,23 @@ export function VeiculosScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Barra de busca + botão filtro */}
-      <View style={styles.searchRow}>
-        <View style={styles.searchBar}>
-          <Feather name="search" size={16} color={Colors.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Pesquisar por marca ou modelo..."
-            placeholderTextColor={Colors.textHint}
-            value={search}
-            onChangeText={setSearch}
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')}>
-              <Feather name="x" size={15} color={Colors.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-        <TouchableOpacity
-          style={[styles.filterButton, filterOpen && styles.filterButtonActive]}
-          onPress={() => setFilterOpen((v) => !v)}
-        >
-          <Feather name="sliders" size={16} color={filterOpen ? '#FFFFFF' : Colors.textPrimary} />
-        </TouchableOpacity>
+      {/* Marca em ordem alfabética — igual à tela de Comparar */}
+      <View style={styles.inlineFilterBlock}>
+        <FilterChipRow label="Marca">
+          <FilterLetterIndex letters={availableLetters} active={activeLetter} onSelect={selectLetter} />
+        </FilterChipRow>
+        {activeLetter && (
+          <View style={styles.brandWrap}>
+            {visibleBrands.map((brand) => (
+              <FilterChip
+                key={brand.valor}
+                label={brand.nome}
+                active={selectedBrands.includes(brand.nome)}
+                onPress={() => toggleBrand(brand.nome)}
+              />
+            ))}
+          </View>
+        )}
       </View>
 
       <ScrollView
@@ -165,18 +163,11 @@ export function VeiculosScreen() {
             </View>
             <Text style={styles.emptyStateTitle}>Comece sua busca</Text>
             <Text style={styles.emptyStateText}>
-              Pesquise por marca ou modelo, ou use o filtro pra explorar as opções.
+              Escolha uma letra do alfabeto e selecione a marca que procura.
             </Text>
           </View>
         )}
       </ScrollView>
-
-      <FilterSheet
-        visible={filterOpen}
-        filters={appliedFilters}
-        onChange={setAppliedFilters}
-        onClose={() => setFilterOpen(false)}
-      />
 
       <VeiculoFicha
         vehicle={selectedVehicle}
@@ -224,45 +215,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  searchRow: {
+  inlineFilterBlock: {
+    paddingBottom: 12,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  brandWrap: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    flexWrap: 'wrap',
+    gap: 8,
     paddingHorizontal: 20,
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Colors.radiusPill,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-  },
-  searchInput: {
-    flex: 1,
-    color: Colors.textPrimary,
-    fontSize: 14,
-    fontFamily: 'Sora_400Regular',
-  },
-  filterButton: {
-    width: 42,
-    height: 42,
-    borderRadius: Colors.radiusPill,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterButtonActive: {
-    backgroundColor: Colors.action,
-    borderColor: Colors.action,
+    paddingTop: 4,
   },
   scroll: {
     flex: 1,

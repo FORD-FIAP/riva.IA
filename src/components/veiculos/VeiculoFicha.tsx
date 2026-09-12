@@ -9,6 +9,7 @@ import {
   Animated,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Vehicle } from '../../types/vehicle';
 import { Colors } from '../../theme/colors';
@@ -27,6 +28,7 @@ interface VeiculoFichaProps {
 
 export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
   const { height: screenHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const { isFavorite, toggle } = useFavoritesContext();
   const { isAuthenticated, requestLogin } = useAuth();
   const { trackView } = useRecentlyViewedContext();
@@ -116,8 +118,9 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
           </View>
         </ScrollView>
 
-        {/* Botões fixos no rodapé */}
-        <View style={styles.footer}>
+        {/* Botões fixos no rodapé — soma a área segura de baixo pra não ficar
+        embaixo da barra de navegação/gestos do Android. */}
+        <View style={[styles.footer, { paddingBottom: 10 + insets.bottom }]}>
           <TouchableOpacity
             style={styles.compareButton}
             onPress={() => {

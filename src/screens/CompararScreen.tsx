@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   FlatList,
@@ -313,8 +312,6 @@ function VehiclePickerModal({
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
-  const [search, setSearch] = useState('');
-  const [filterOpen, setFilterOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [allBrands, setAllBrands] = useState<{ nome: string; valor: string }[]>([]);
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
@@ -337,8 +334,6 @@ function VehiclePickerModal({
         Animated.timing(slideAnim, { toValue: screenHeight, duration: 300, useNativeDriver: NATIVE_DRIVER }),
         Animated.timing(backdropAnim, { toValue: 0, duration: 300, useNativeDriver: NATIVE_DRIVER }),
       ]).start();
-      setSearch('');
-      setFilterOpen(false);
       setAppliedFilters(EMPTY_FILTERS);
       setActiveLetter(null);
       setResults([]);
@@ -359,15 +354,12 @@ function VehiclePickerModal({
   const availableLetters = [...new Set(allBrands.map((b) => b.nome[0]?.toUpperCase()).filter(Boolean))].sort();
   const visibleBrands = activeLetter ? allBrands.filter((b) => b.nome[0]?.toUpperCase() === activeLetter) : [];
 
-  const hasSearch = search.trim().length > 0;
   const hasFilters = appliedFilters.brands.length > 0;
-  const showResults = hasSearch || hasFilters;
   const excludedIds = new Set(excluded.map((v) => v.id));
 
-  // Mesma lógica de busca da tela de Veículos — marca aplicada no filtro, ou
-  // texto livre batendo com marca/modelo.
+  // Busca só por marca (alfabeto) — igual à tela de Veículos.
   useEffect(() => {
-    if (!visible || !showResults) {
+    if (!visible || !hasFilters) {
       setResults([]);
       return;
     }
@@ -385,20 +377,13 @@ function VehiclePickerModal({
         return;
       }
 
-      const q = search.trim().toLowerCase();
-      const matchingBrands = hasFilters
-        ? brands.filter((b) => appliedFilters.brands.includes(b.nome))
-        : brands.filter((b) => b.nome.toLowerCase().includes(q));
-
+      const matchingBrands = brands.filter((b) => appliedFilters.brands.includes(b.nome));
       const brandsToQuery = matchingBrands.slice(0, 6);
 
       const vehicleLists = await Promise.all(
         brandsToQuery.map(async (brand) => {
           const models = await getFipeModels(brand.valor);
           if (!models) return [];
-          // A marca já bateu com a busca (matchingBrands) — não faz sentido exigir
-          // que o nome do MODELO também contenha o texto (ex: buscar "Honda" não
-          // deveria zerar resultado só por nenhum modelo se chamar "Honda").
           return models.slice(0, 30).map((m) => buildVehicleFromFipe(brand, m));
         }),
       );
@@ -413,7 +398,7 @@ function VehiclePickerModal({
     return () => {
       cancelled = true;
     };
-  }, [visible, search, appliedFilters]);
+  }, [visible, appliedFilters]);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents={visible ? 'auto' : 'none'}>
@@ -424,54 +409,28 @@ function VehiclePickerModal({
       <Animated.View style={[styles.modalSheet, { transform: [{ translateY: slideAnim }] }]}>
         <FilterSheetHeader title="Escolher veículo" onClose={onClose} />
 
-        {/* Barra de busca + botão filtro — igual à tela de Veículos */}
-        <View style={styles.searchRow}>
-          <View style={styles.searchBar}>
-            <Feather name="search" size={16} color={Colors.textMuted} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Pesquisar por marca ou modelo..."
-              placeholderTextColor={Colors.textHint}
-              value={search}
-              onChangeText={setSearch}
-            />
-            {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')}>
-                <Feather name="x" size={15} color={Colors.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-          <TouchableOpacity
-            style={[styles.filterButton, (hasFilters || filterOpen) && styles.filterButtonActive]}
-            onPress={() => setFilterOpen((v) => !v)}
-          >
-            <Feather name="sliders" size={16} color={hasFilters || filterOpen ? '#FFFFFF' : Colors.textPrimary} />
-          </TouchableOpacity>
+        {/* Marca em ordem alfabética — único jeito de buscar aqui */}
+        <View style={styles.inlineFilterBlock}>
+          <FilterChipRow label="Marca">
+            <FilterLetterIndex letters={availableLetters} active={activeLetter} onSelect={selectLetter} />
+          </FilterChipRow>
+          {activeLetter && (
+            <View style={styles.brandWrap}>
+              {visibleBrands.map((brand) => (
+                <FilterChip
+                  key={brand.valor}
+                  label={brand.nome}
+                  active={appliedFilters.brands.includes(brand.nome)}
+                  onPress={() => toggleBrandFilter(brand.nome)}
+                />
+              ))}
+            </View>
+          )}
         </View>
 
-        {filterOpen && (
-          <View style={styles.inlineFilterBlock}>
-            <FilterChipRow label="Marca">
-              <FilterLetterIndex letters={availableLetters} active={activeLetter} onSelect={selectLetter} />
-            </FilterChipRow>
-            {activeLetter && (
-              <View style={styles.brandWrap}>
-                {visibleBrands.map((brand) => (
-                  <FilterChip
-                    key={brand.valor}
-                    label={brand.nome}
-                    active={appliedFilters.brands.includes(brand.nome)}
-                    onPress={() => toggleBrandFilter(brand.nome)}
-                  />
-                ))}
-              </View>
-            )}
-          </View>
-        )}
-
-        {!showResults ? (
+        {!hasFilters ? (
           <View style={styles.listEmpty}>
-            <Text style={styles.listEmptyText}>Pesquise ou abra o filtro pra escolher a marca</Text>
+            <Text style={styles.listEmptyText}>Escolha uma letra pra ver as marcas</Text>
           </View>
         ) : loading ? (
           <View style={styles.listEmpty}>
@@ -769,46 +728,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 32,
     maxHeight: '85%',
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 20,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Colors.radiusPill,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-  },
-  searchInput: {
-    flex: 1,
-    color: Colors.textPrimary,
-    fontSize: 14,
-    fontFamily: 'Sora_400Regular',
-  },
-  filterButton: {
-    width: 42,
-    height: 42,
-    borderRadius: Colors.radiusPill,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterButtonActive: {
-    backgroundColor: Colors.action,
-    borderColor: Colors.action,
   },
   inlineFilterBlock: {
     paddingBottom: 12,

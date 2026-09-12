@@ -1,6 +1,6 @@
 /** Tela inicial do app RIVA — hero fullscreen com chat conversacional */
 import React, { useRef, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, Animated, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Header } from '../components/home/Header';
@@ -58,7 +58,13 @@ export function HomeScreen() {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <Header onMenuPress={openSidebar} isAuthenticated={isAuthenticated} userInitial={user?.name?.charAt(0)} />
 
-      <View style={styles.hero}>
+      <KeyboardAvoidingView
+        style={styles.hero}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        // Android com windowSoftInputMode "adjustResize" já redimensiona a tela
+        // sozinho; "height"/"padding" aqui duplicaria o deslocamento e empurraria
+        // o composer pra fora da tela.
+      >
 
         {/* Camada Greeting — fica visível enquanto não há conversa */}
         <Animated.View
@@ -146,7 +152,7 @@ export function HomeScreen() {
           </View>
         </Animated.View>
 
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
