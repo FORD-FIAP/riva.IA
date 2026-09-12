@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   StyleSheet,
   FlatList,
@@ -20,6 +21,7 @@ import { useFavoritesContext } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
 import { getFipeBrands, getFipeModels, buildVehicleFromFipe, cacheVehicles, getCachedVehicle } from '../services/fipeApi';
 import { useFipePrice } from '../hooks/useFipePrice';
+import { useCarImage } from '../hooks/useCarImage';
 import { Vehicle } from '../types/vehicle';
 import { FilterSheetHeader, FilterChipRow, FilterChip, FilterLetterIndex } from '../components/shared/FilterChips';
 import { FilterState, EMPTY_FILTERS } from '../components/veiculos/FilterFlow';
@@ -198,7 +200,7 @@ export function CompararScreen() {
               <Feather name="info" size={14} color={Colors.textMuted} />
               <Text style={styles.noticeText}>
                 Comparação por motor, dimensões, off-road e segurança ainda não está disponível —
-                depende de uma API específica pra ficha técnica, que ainda não integramos.
+                depende de uma fonte de dados específica pra ficha técnica.
               </Text>
             </View>
           </View>
@@ -265,11 +267,16 @@ function FilledSlot({
   onRemove: () => void;
 }) {
   const fipe = useFipePrice(vehicle.fipeCode, vehicle.preco ?? '');
+  const carImage = useCarImage(vehicle.marca, vehicle.modelo);
 
   return (
     <View style={styles.slotFilled}>
       <View style={styles.imageArea}>
-        <MaterialCommunityIcons name="car-side" size={56} color={color} />
+        {carImage.url ? (
+          <Image source={{ uri: carImage.url }} style={styles.slotImage} resizeMode="cover" />
+        ) : (
+          <MaterialCommunityIcons name="car-side" size={56} color={color} />
+        )}
         <Text style={[styles.brandBadgeOverlay, { color }]}>{vehicle.marca.toUpperCase()}</Text>
       </View>
 
@@ -448,26 +455,32 @@ function VehiclePickerModal({
                 <Text style={styles.listEmptyText}>Nenhum veículo encontrado</Text>
               </View>
             }
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.listRow}
-                onPress={() => onSelect(item)}
-                activeOpacity={0.75}
-              >
-                <View style={styles.listThumb}>
-                  <MaterialCommunityIcons name="car-side" size={28} color={Colors.action} />
-                </View>
-                <View style={styles.listText}>
-                  <Text style={styles.listBrand}>{item.marca.toUpperCase()}</Text>
-                  <Text style={styles.listName} numberOfLines={2}>{item.modelo}</Text>
-                </View>
-                <Feather name="plus" size={18} color={Colors.textMuted} />
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => <PickerListRow vehicle={item} onPress={() => onSelect(item)} />}
           />
         )}
       </Animated.View>
     </View>
+  );
+}
+
+function PickerListRow({ vehicle, onPress }: { vehicle: Vehicle; onPress: () => void }) {
+  const carImage = useCarImage(vehicle.marca, vehicle.modelo);
+
+  return (
+    <TouchableOpacity style={styles.listRow} onPress={onPress} activeOpacity={0.75}>
+      <View style={styles.listThumb}>
+        {carImage.url ? (
+          <Image source={{ uri: carImage.url }} style={styles.listThumbImage} resizeMode="cover" />
+        ) : (
+          <MaterialCommunityIcons name="car-side" size={28} color={Colors.action} />
+        )}
+      </View>
+      <View style={styles.listText}>
+        <Text style={styles.listBrand}>{vehicle.marca.toUpperCase()}</Text>
+        <Text style={styles.listName} numberOfLines={2}>{vehicle.modelo}</Text>
+      </View>
+      <Feather name="plus" size={18} color={Colors.textMuted} />
+    </TouchableOpacity>
   );
 }
 
@@ -601,6 +614,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
     overflow: 'hidden',
+  },
+  slotImage: {
+    width: '100%',
+    height: '100%',
   },
   brandBadgeOverlay: {
     position: 'absolute',
@@ -770,6 +787,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  listThumbImage: {
+    width: '100%',
+    height: '100%',
   },
   listText: { flex: 1, gap: 1 },
   listBrand: {

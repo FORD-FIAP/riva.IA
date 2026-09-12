@@ -1,10 +1,11 @@
 /** Card usado na listagem de resultados da tela de Veículos — marca/modelo reais da FIPE */
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Vehicle } from '../../types/vehicle';
 import { Colors } from '../../theme/colors';
 import { useFipePrice } from '../../hooks/useFipePrice';
+import { useCarImage } from '../../hooks/useCarImage';
 
 interface VeiculoResultCardProps {
   vehicle: Vehicle;
@@ -13,11 +14,16 @@ interface VeiculoResultCardProps {
 
 export function VeiculoResultCard({ vehicle, onPress }: VeiculoResultCardProps) {
   const fipe = useFipePrice(vehicle.fipeCode, vehicle.preco ?? '');
+  const carImage = useCarImage(vehicle.marca, vehicle.modelo);
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.iconArea}>
-        <MaterialCommunityIcons name="car-side" size={32} color={Colors.action} />
+        {carImage.url ? (
+          <Image source={{ uri: carImage.url }} style={styles.iconImage} resizeMode="cover" />
+        ) : (
+          <MaterialCommunityIcons name="car-side" size={32} color={Colors.action} />
+        )}
       </View>
 
       <View style={styles.info}>
@@ -49,6 +55,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface2,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  iconImage: {
+    width: '100%',
+    height: '100%',
   },
   info: {
     flex: 1,
