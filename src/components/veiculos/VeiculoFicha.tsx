@@ -22,6 +22,8 @@ import { useNavigation } from '../../context/NavigationContext';
 import { useChat } from '../../context/ChatContext';
 import { useFipePrice } from '../../hooks/useFipePrice';
 import { useCarImage } from '../../hooks/useCarImage';
+import { getMockVehicle, FichaTecnica } from '../../mock/mockVehicles';
+import { SECTION_LABELS, formatFieldLabel } from '../../utils/fichaTecnica';
 
 interface VeiculoFichaProps {
   vehicle: Vehicle | null;
@@ -41,6 +43,18 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
   const backdropAnim = useRef(new Animated.Value(0)).current;
   const fipe = useFipePrice(vehicle?.fipeCode, vehicle?.preco ?? '');
   const carImage = useCarImage(vehicle?.marca ?? '', vehicle?.modelo);
+  const mockVehicle = vehicle ? getMockVehicle(vehicle.id) : undefined;
+  const imageSource = mockVehicle?.imagem ?? (carImage.url ? { uri: carImage.url } : null);
+  const fichaTecnica = mockVehicle?.fichaTecnica;
+  const fichaTecnicaSections = fichaTecnica
+    ? (Object.entries(fichaTecnica) as [keyof FichaTecnica, Record<string, string> | undefined][])
+        .map(([key, fields]) => ({
+          key,
+          label: SECTION_LABELS[key],
+          fields: Object.entries(fields ?? {}).filter(([, value]) => value),
+        }))
+        .filter((section) => section.fields.length > 0)
+    : [];
 
   const visible = vehicle !== null;
 
@@ -73,8 +87,8 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
       <Animated.View style={[styles.panel, { transform: [{ translateY: slideAnim }] }]}>
         <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll} bounces={false}>
           <View style={styles.imageArea}>
-            {carImage.url ? (
-              <Image source={{ uri: carImage.url }} style={styles.vehicleImage} resizeMode="cover" />
+            {imageSource ? (
+              <Image source={imageSource} style={styles.vehicleImage} resizeMode="cover" />
             ) : (
               <View style={styles.imagePlaceholder}>
                 <MaterialCommunityIcons name="car-side" size={80} color={Colors.action} />
@@ -113,13 +127,26 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
               <IdentItem label={fipe.isLive ? 'Preço (FIPE)' : 'Preço'} value={fipe.price || 'Indisponível'} valueAccent />
             </View>
 
-            <View style={styles.noticeBox}>
-              <Feather name="info" size={14} color={Colors.textMuted} />
-              <Text style={styles.noticeText}>
-                Ficha técnica completa (motor, dimensões, off-road, segurança) ainda não
-                está disponível — vai chegar quando integrarmos uma fonte de dados pra isso.
-              </Text>
-            </View>
+            {fichaTecnicaSections.length > 0 ? (
+              fichaTecnicaSections.map((section) => (
+                <View key={section.key} style={styles.specsSection}>
+                  <Text style={styles.specsSectionTitle}>{section.label}</Text>
+                  <View style={styles.identGrid}>
+                    {section.fields.map(([field, value]) => (
+                      <IdentItem key={field} label={formatFieldLabel(field)} value={value} />
+                    ))}
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View style={styles.noticeBox}>
+                <Feather name="info" size={14} color={Colors.textMuted} />
+                <Text style={styles.noticeText}>
+                  Ficha técnica completa (motor, dimensões, off-road, segurança) ainda não
+                  está disponível — vai chegar quando integrarmos uma fonte de dados pra isso.
+                </Text>
+              </View>
+            )}
 
             <View style={{ height: 12 }} />
           </View>
@@ -272,6 +299,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
     marginBottom: 20,
+  },
+  specsSection: {
+    marginBottom: 8,
+  },
+  specsSectionTitle: {
+    color: Colors.accent,
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Sora_600SemiBold',
+    marginBottom: 8,
   },
   noticeBox: {
     flexDirection: 'row',
