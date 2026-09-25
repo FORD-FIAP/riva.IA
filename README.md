@@ -44,9 +44,7 @@ npm install
 npx expo start
 ```
 
-Escaneie o QR Code com o **Expo Go** (Android) ou a câmera (iOS).
-
-**Alternativa:** a extensão do VS Code `Mobile Preview: Show` também funciona para pré-visualizar sem celular.
+![QR Code APK](assets/qrcode-apk.png)
 
 ### Backend (chat com IA)
 
