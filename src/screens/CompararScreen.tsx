@@ -22,6 +22,8 @@ import { useAuth } from '../context/AuthContext';
 import { getFipeBrands, getFipeModels, buildVehicleFromFipe, cacheVehicles, getCachedVehicle } from '../services/fipeApi';
 import { useFipePrice } from '../hooks/useFipePrice';
 import { useCarImage } from '../hooks/useCarImage';
+import { getMockVehicle, CATEGORIAS, CategoriaVeiculo, MOCK_VEHICLES, FichaTecnica } from '../mock/mockVehicles';
+import { SECTION_LABELS, formatFieldLabel, bestValueIndex } from '../utils/fichaTecnica';
 import { Vehicle } from '../types/vehicle';
 import { FilterSheetHeader, FilterChipRow, FilterChip, FilterLetterIndex } from '../components/shared/FilterChips';
 import { FilterState, EMPTY_FILTERS } from '../components/veiculos/FilterFlow';
@@ -195,16 +197,10 @@ export function CompararScreen() {
             {filledVehicles.map((v, i) => (
               <PriceRow key={v.id} vehicle={v} color={SLOT_COLORS[i % SLOT_COLORS.length]} />
             ))}
-
-            <View style={styles.noticeBox}>
-              <Feather name="info" size={14} color={Colors.textMuted} />
-              <Text style={styles.noticeText}>
-                Comparação por motor, dimensões, off-road e segurança ainda não está disponível —
-                depende de uma fonte de dados específica pra ficha técnica.
-              </Text>
-            </View>
           </View>
         )}
+
+        {comparisonReady && <FichaTecnicaComparison vehicles={filledVehicles} colors={SLOT_COLORS} />}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -232,6 +228,85 @@ function PriceRow({ vehicle, color }: { vehicle: Vehicle; color: string }) {
       </View>
       <Text style={styles.priceValue}>{fipe.price || 'Indisponível'}</Text>
     </View>
+  );
+}
+
+// ─── Comparação da ficha técnica (só quando os veículos são do catálogo mockado) ──
+
+const FICHA_SECTIONS: (keyof FichaTecnica)[] = [
+  'desempenho',
+  'motor',
+  'transmissao',
+  'dimensoes',
+  'pesoCapacidade',
+  'suspensaoFreiosDirecao',
+  'consumoEmissoes',
+  'seguranca',
+  'eletricoHibrido',
+];
+
+function FichaTecnicaComparison({ vehicles, colors }: { vehicles: Vehicle[]; colors: string[] }) {
+  const mockData = vehicles.map((v) => getMockVehicle(v.id));
+  const allHaveFicha = mockData.every((m) => m?.fichaTecnica);
+
+  if (!allHaveFicha) {
+    return (
+      <View style={styles.section}>
+        <View style={styles.noticeBox}>
+          <Feather name="info" size={14} color={Colors.textMuted} />
+          <Text style={styles.noticeText}>
+            Comparação por motor, dimensões e segurança só está disponível pra veículos do
+            catálogo por Categoria — pelo menos um dos selecionados veio da busca por Marca (FIPE),
+            que não tem esses dados.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      {FICHA_SECTIONS.map((sectionKey) => {
+        const fieldKeys = [
+          ...new Set(mockData.flatMap((m) => Object.keys(m!.fichaTecnica[sectionKey] ?? {}))),
+        ];
+        if (fieldKeys.length === 0) return null;
+
+        return (
+          <View key={sectionKey} style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <MaterialCommunityIcons name="cog-outline" size={16} color={Colors.accent} />
+              <Text style={styles.sectionTitle}>{SECTION_LABELS[sectionKey]}</Text>
+            </View>
+
+            {fieldKeys.map((fieldKey) => {
+              const values = mockData.map((m) => m!.fichaTecnica[sectionKey]?.[fieldKey]);
+              const winnerIndex = bestValueIndex(fieldKey, values);
+
+              return (
+                <View key={fieldKey} style={styles.specFieldBlock}>
+                  <Text style={styles.specFieldLabel}>{formatFieldLabel(fieldKey)}</Text>
+                  {values.map((value, i) => (
+                    <View key={i} style={styles.specValueRow}>
+                      <View style={[styles.priceDot, { backgroundColor: colors[i % colors.length] }]} />
+                      <Text
+                        style={[styles.specValueText, winnerIndex === i && styles.specValueTextWinner]}
+                        numberOfLines={2}
+                      >
+                        {value ?? '—'}
+                      </Text>
+                      {winnerIndex === i && (
+                        <Feather name="check-circle" size={13} color={Colors.accent} />
+                      )}
+                    </View>
+                  ))}
+                </View>
+              );
+            })}
+          </View>
+        );
+      })}
+    </>
   );
 }
 
@@ -268,12 +343,13 @@ function FilledSlot({
 }) {
   const fipe = useFipePrice(vehicle.fipeCode, vehicle.preco ?? '');
   const carImage = useCarImage(vehicle.marca, vehicle.modelo);
+  const imageSource = getMockVehicle(vehicle.id)?.imagem ?? (carImage.url ? { uri: carImage.url } : null);
 
   return (
     <View style={styles.slotFilled}>
       <View style={styles.imageArea}>
-        {carImage.url ? (
-          <Image source={{ uri: carImage.url }} style={styles.slotImage} resizeMode="cover" />
+        {imageSource ? (
+          <Image source={imageSource} style={styles.slotImage} resizeMode="cover" />
         ) : (
           <MaterialCommunityIcons name="car-side" size={56} color={color} />
         )}
@@ -322,6 +398,7 @@ function VehiclePickerModal({
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [allBrands, setAllBrands] = useState<{ nome: string; valor: string }[]>([]);
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
+  const [selectedCategoria, setSelectedCategoria] = useState<CategoriaVeiculo | null>(null);
   const [results, setResults] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -343,11 +420,13 @@ function VehiclePickerModal({
       ]).start();
       setAppliedFilters(EMPTY_FILTERS);
       setActiveLetter(null);
+      setSelectedCategoria(null);
       setResults([]);
     }
   }, [visible]);
 
   function toggleBrandFilter(nome: string) {
+    setSelectedCategoria(null);
     setAppliedFilters((prev) => ({
       ...prev,
       brands: prev.brands.includes(nome) ? prev.brands.filter((b) => b !== nome) : [...prev.brands, nome],
@@ -355,7 +434,14 @@ function VehiclePickerModal({
   }
 
   function selectLetter(letter: string) {
+    setSelectedCategoria(null);
     setActiveLetter((prev) => (prev === letter ? null : letter));
+  }
+
+  function selectCategoria(categoria: CategoriaVeiculo) {
+    setActiveLetter(null);
+    setAppliedFilters(EMPTY_FILTERS);
+    setSelectedCategoria((prev) => (prev === categoria ? null : categoria));
   }
 
   const availableLetters = [...new Set(allBrands.map((b) => b.nome[0]?.toUpperCase()).filter(Boolean))].sort();
@@ -364,10 +450,16 @@ function VehiclePickerModal({
   const hasFilters = appliedFilters.brands.length > 0;
   const excludedIds = new Set(excluded.map((v) => v.id));
 
-  // Busca só por marca (alfabeto) — igual à tela de Veículos.
+  // Categoria: mostra só o catálogo curado (10 veículos com ficha completa).
+  useEffect(() => {
+    if (!selectedCategoria) return;
+    setResults(MOCK_VEHICLES.filter((v) => v.categoria === selectedCategoria && !excludedIds.has(v.id)));
+  }, [selectedCategoria]);
+
+  // Marca: busca só por marca (alfabeto), ao vivo na FIPE.
   useEffect(() => {
     if (!visible || !hasFilters) {
-      setResults([]);
+      if (!selectedCategoria) setResults([]);
       return;
     }
 
@@ -416,7 +508,7 @@ function VehiclePickerModal({
       <Animated.View style={[styles.modalSheet, { transform: [{ translateY: slideAnim }] }]}>
         <FilterSheetHeader title="Escolher veículo" onClose={onClose} />
 
-        {/* Marca em ordem alfabética — único jeito de buscar aqui */}
+        {/* Marca em ordem alfabética (busca ao vivo na FIPE) */}
         <View style={styles.inlineFilterBlock}>
           <FilterChipRow label="Marca">
             <FilterLetterIndex letters={availableLetters} active={activeLetter} onSelect={selectLetter} />
@@ -435,9 +527,23 @@ function VehiclePickerModal({
           )}
         </View>
 
-        {!hasFilters ? (
+        {/* Categoria — catálogo curado com ficha técnica completa (10 veículos) */}
+        <View style={styles.inlineFilterBlock}>
+          <FilterChipRow label="Categoria">
+            {CATEGORIAS.map((categoria) => (
+              <FilterChip
+                key={categoria}
+                label={categoria}
+                active={selectedCategoria === categoria}
+                onPress={() => selectCategoria(categoria)}
+              />
+            ))}
+          </FilterChipRow>
+        </View>
+
+        {!hasFilters && !selectedCategoria ? (
           <View style={styles.listEmpty}>
-            <Text style={styles.listEmptyText}>Escolha uma letra pra ver as marcas</Text>
+            <Text style={styles.listEmptyText}>Escolha uma marca (A-Z) ou uma categoria</Text>
           </View>
         ) : loading ? (
           <View style={styles.listEmpty}>
@@ -465,12 +571,13 @@ function VehiclePickerModal({
 
 function PickerListRow({ vehicle, onPress }: { vehicle: Vehicle; onPress: () => void }) {
   const carImage = useCarImage(vehicle.marca, vehicle.modelo);
+  const imageSource = getMockVehicle(vehicle.id)?.imagem ?? (carImage.url ? { uri: carImage.url } : null);
 
   return (
     <TouchableOpacity style={styles.listRow} onPress={onPress} activeOpacity={0.75}>
       <View style={styles.listThumb}>
-        {carImage.url ? (
-          <Image source={{ uri: carImage.url }} style={styles.listThumbImage} resizeMode="cover" />
+        {imageSource ? (
+          <Image source={imageSource} style={styles.listThumbImage} resizeMode="cover" />
         ) : (
           <MaterialCommunityIcons name="car-side" size={28} color={Colors.action} />
         )}
@@ -708,6 +815,34 @@ const styles = StyleSheet.create({
   priceValue: {
     color: Colors.accent,
     fontSize: 13,
+    fontWeight: '700',
+    fontFamily: 'Sora_700Bold',
+  },
+  specFieldBlock: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: 6,
+  },
+  specFieldLabel: {
+    color: Colors.textHint,
+    fontSize: 11,
+    fontFamily: 'Sora_600SemiBold',
+    letterSpacing: 0.3,
+  },
+  specValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  specValueText: {
+    flex: 1,
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontFamily: 'Sora_400Regular',
+  },
+  specValueTextWinner: {
+    color: Colors.textPrimary,
     fontWeight: '700',
     fontFamily: 'Sora_700Bold',
   },

@@ -6,6 +6,7 @@ import { Vehicle } from '../../types/vehicle';
 import { Colors } from '../../theme/colors';
 import { useFipePrice } from '../../hooks/useFipePrice';
 import { useCarImage } from '../../hooks/useCarImage';
+import { getMockVehicle } from '../../mock/mockVehicles';
 
 interface VeiculoResultCardProps {
   vehicle: Vehicle;
@@ -15,12 +16,13 @@ interface VeiculoResultCardProps {
 export function VeiculoResultCard({ vehicle, onPress }: VeiculoResultCardProps) {
   const fipe = useFipePrice(vehicle.fipeCode, vehicle.preco ?? '');
   const carImage = useCarImage(vehicle.marca, vehicle.modelo);
+  const imageSource = getMockVehicle(vehicle.id)?.imagem ?? (carImage.url ? { uri: carImage.url } : null);
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.iconArea}>
-        {carImage.url ? (
-          <Image source={{ uri: carImage.url }} style={styles.iconImage} resizeMode="cover" />
+        {imageSource ? (
+          <Image source={imageSource} style={styles.iconImage} resizeMode="cover" />
         ) : (
           <MaterialCommunityIcons name="car-side" size={32} color={Colors.action} />
         )}

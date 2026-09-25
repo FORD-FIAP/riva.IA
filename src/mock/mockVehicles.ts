@@ -19,6 +19,7 @@
  * - O Ford Mustang GT Convertible não é vendido oficialmente no Brasil
  *   (só o coupé); dados do mercado norte-americano.
  */
+import { ImageSourcePropType } from 'react-native';
 import { Vehicle } from '../types/vehicle';
 
 export type CategoriaVeiculo = 'Picape' | 'Conversível' | 'Sedã' | 'Hatch';
@@ -39,6 +40,8 @@ export interface FichaTecnica {
 export interface MockVehicle extends Vehicle {
   categoria: CategoriaVeiculo;
   fichaTecnica: FichaTecnica;
+  /** Imagem local escolhida à mão (assets/imagens-mokadas) — usada no lugar da busca automática via CarImages. */
+  imagem?: ImageSourcePropType;
 }
 
 export const CATEGORIAS: CategoriaVeiculo[] = ['Picape', 'Conversível', 'Sedã', 'Hatch'];
@@ -46,6 +49,7 @@ export const CATEGORIAS: CategoriaVeiculo[] = ['Picape', 'Conversível', 'Sedã'
 export const MOCK_VEHICLES: MockVehicle[] = [
   {
     id: 'mock-mitsubishi-triton-hpes',
+    imagem: require('../../assets/imagens-mokadas/triton-hpes/img1.jpg'),
     marca: 'Mitsubishi',
     marcaCodigo: 'mock',
     modelo: 'Triton HPE-S',
@@ -119,6 +123,7 @@ export const MOCK_VEHICLES: MockVehicle[] = [
   },
   {
     id: 'mock-mitsubishi-savana',
+    imagem: require('../../assets/imagens-mokadas/triton-savana/img1.jpg'),
     marca: 'Mitsubishi',
     marcaCodigo: 'mock',
     modelo: 'L200 Triton',
@@ -188,6 +193,7 @@ export const MOCK_VEHICLES: MockVehicle[] = [
   },
   {
     id: 'mock-ford-ranger-raptor',
+    imagem: require('../../assets/imagens-mokadas/ranger-raptor/img1.jpg'),
     marca: 'Ford',
     marcaCodigo: 'mock',
     modelo: 'Ranger Raptor',
@@ -262,6 +268,7 @@ export const MOCK_VEHICLES: MockVehicle[] = [
   },
   {
     id: 'mock-ford-mustang-gt',
+    imagem: require('../../assets/imagens-mokadas/mustang-gt/img1.jpg'),
     marca: 'Ford',
     marcaCodigo: 'mock',
     modelo: 'Mustang GT',
@@ -337,6 +344,7 @@ export const MOCK_VEHICLES: MockVehicle[] = [
   },
   {
     id: 'mock-porsche-panamera',
+    imagem: require('../../assets/imagens-mokadas/porsche-panamera/img1.jpg'),
     marca: 'Porsche',
     marcaCodigo: 'mock',
     modelo: 'Panamera',
@@ -409,6 +417,7 @@ export const MOCK_VEHICLES: MockVehicle[] = [
   },
   {
     id: 'mock-mitsubishi-lancer',
+    imagem: require('../../assets/imagens-mokadas/lancer/img1.jpg'),
     marca: 'Mitsubishi',
     marcaCodigo: 'mock',
     modelo: 'Lancer',
@@ -478,6 +487,7 @@ export const MOCK_VEHICLES: MockVehicle[] = [
   },
   {
     id: 'mock-honda-civic',
+    imagem: require('../../assets/imagens-mokadas/civic/img1.jpg'),
     marca: 'Honda',
     marcaCodigo: 'mock',
     modelo: 'Civic',
@@ -555,6 +565,8 @@ export const MOCK_VEHICLES: MockVehicle[] = [
   },
   {
     id: 'mock-toyota-corolla',
+    // Só existe em .webp nessa pasta — testar no iPhone real, formato pode não abrir.
+    imagem: require('../../assets/imagens-mokadas/corolla/img1.webp'),
     marca: 'Toyota',
     marcaCodigo: 'mock',
     modelo: 'Corolla',
@@ -629,6 +641,7 @@ export const MOCK_VEHICLES: MockVehicle[] = [
   },
   {
     id: 'mock-byd-dolphin',
+    imagem: require('../../assets/imagens-mokadas/byd/img1.jpg'),
     marca: 'BYD',
     marcaCodigo: 'mock',
     modelo: 'Dolphin',
@@ -706,6 +719,7 @@ export const MOCK_VEHICLES: MockVehicle[] = [
   },
   {
     id: 'mock-renault-kwid',
+    imagem: require('../../assets/imagens-mokadas/kwid/img3.jpg'),
     marca: 'Renault',
     marcaCodigo: 'mock',
     modelo: 'Kwid',

@@ -23,25 +23,7 @@ import { useChat } from '../../context/ChatContext';
 import { useFipePrice } from '../../hooks/useFipePrice';
 import { useCarImage } from '../../hooks/useCarImage';
 import { getMockVehicle, FichaTecnica } from '../../mock/mockVehicles';
-
-const SECTION_LABELS: Record<keyof FichaTecnica, string> = {
-  identificacao: 'Identificação',
-  motor: 'Motor',
-  desempenho: 'Desempenho',
-  transmissao: 'Transmissão / Tração',
-  dimensoes: 'Dimensões',
-  pesoCapacidade: 'Peso e Capacidade',
-  suspensaoFreiosDirecao: 'Suspensão / Freios / Direção',
-  consumoEmissoes: 'Consumo / Emissões',
-  seguranca: 'Segurança',
-  eletricoHibrido: 'Elétrico / Híbrido',
-};
-
-/** "potenciaMaxima" -> "Potência Máxima" (sem acentuar de volta — só separa as palavras). */
-function formatFieldLabel(key: string): string {
-  const spaced = key.replace(/([A-Z])/g, ' $1').toLowerCase();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
+import { SECTION_LABELS, formatFieldLabel } from '../../utils/fichaTecnica';
 
 interface VeiculoFichaProps {
   vehicle: Vehicle | null;
@@ -61,7 +43,9 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
   const backdropAnim = useRef(new Animated.Value(0)).current;
   const fipe = useFipePrice(vehicle?.fipeCode, vehicle?.preco ?? '');
   const carImage = useCarImage(vehicle?.marca ?? '', vehicle?.modelo);
-  const fichaTecnica = vehicle ? getMockVehicle(vehicle.id)?.fichaTecnica : undefined;
+  const mockVehicle = vehicle ? getMockVehicle(vehicle.id) : undefined;
+  const imageSource = mockVehicle?.imagem ?? (carImage.url ? { uri: carImage.url } : null);
+  const fichaTecnica = mockVehicle?.fichaTecnica;
   const fichaTecnicaSections = fichaTecnica
     ? (Object.entries(fichaTecnica) as [keyof FichaTecnica, Record<string, string> | undefined][])
         .map(([key, fields]) => ({
@@ -103,8 +87,8 @@ export function VeiculoFicha({ vehicle, onClose }: VeiculoFichaProps) {
       <Animated.View style={[styles.panel, { transform: [{ translateY: slideAnim }] }]}>
         <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll} bounces={false}>
           <View style={styles.imageArea}>
-            {carImage.url ? (
-              <Image source={{ uri: carImage.url }} style={styles.vehicleImage} resizeMode="cover" />
+            {imageSource ? (
+              <Image source={imageSource} style={styles.vehicleImage} resizeMode="cover" />
             ) : (
               <View style={styles.imagePlaceholder}>
                 <MaterialCommunityIcons name="car-side" size={80} color={Colors.action} />
